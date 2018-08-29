@@ -1,0 +1,184 @@
+﻿<link rel="import" href="import/polymer/polymer-element.html" />
+<link rel="import" href="import/paper-button/paper-button.html" />
+<link rel="import" href="import/paper-styles/paper-styles.html">
+<link rel="import" href="images/icons.html" />
+
+<dom-module id="popup-main">
+    <template>
+        <style>
+            :host {
+                @apply --layout-vertical;
+                @apply --layout-center;
+                @apply --paper-font-common-base;
+                background-color: #3367d6;
+                color: #fff;
+                padding: 8px;
+                border-radius: 3px;
+                min-width: 250px;
+            }
+
+            .header {
+                @apply --layout-horizontal;
+                @apply --layout-center;
+                margin-bottom: 20px;
+            }
+
+            img {
+                height: 56px;
+                width: auto;
+            }
+
+            .title {
+                @apply --paper-font-title;
+                min-height: 28px;
+                margin-left: 20px;
+            }
+
+            .url {
+                margin-bottom: 10px;
+            }
+
+                .url > span {
+                    @apply --paper-font-subhead;
+                }
+
+                .url > a {
+                    font-size: 15px;
+                    font-weight: 400;
+                }
+
+            td {
+                padding-top: 8px;
+            }
+
+            td.left {
+                text-align: right;
+                /*padding-right: 5px;*/
+            }
+
+            td.right {
+                text-align: left;
+                /*padding-left: 5px;*/
+            }
+
+            paper-button {
+                min-height: 40px;
+                background-color: var(--paper-blue-a200);
+            }
+
+                paper-button iron-icon {
+                    position: absolute;
+                    left: 10px;
+                    top: 10px;
+                }
+
+                paper-button span {
+                    display: inline-block;
+                    margin-left: 30px;
+                }
+        </style>
+        <div class="header">
+            <img src="images/bizsort-logo.svg" alt="Bizsort Logo">
+            <div class="title">Directory Admin</div>
+        </div>
+        <div class="url" hidden$="{{hideSelector}}"><span>Url:</span>&nbsp;<a id="url">{{selectorUrl}}</a></div>
+        <!--<div class="horizontal layout center-justified" hidden$="{{hideSelector}}">buttons</div>-->
+        <table hidden$="{{hideSelector}}">
+            <tr>
+                <td class="left">
+                    <paper-button on-tap="_handleAction" data-action="BusinessProfile">
+                        <iron-icon icon="bizsrt:business"></iron-icon>
+                        <span>Company Profile</span>
+                    </paper-button>
+                </td>
+                <td class="right">
+                    <paper-button on-tap="_handleAction" data-action="BusinessProduct">
+                        <iron-icon icon="bizsrt:widgets"></iron-icon>
+                        <span>Product/ Service</span>
+                    </paper-button>
+                </td>
+            </tr>
+            <tr>
+                <td class="left">
+                    <paper-button on-tap="_handleAction" data-action="MultiProduct">
+                        <iron-icon icon="bizsrt:list"></iron-icon>
+                        <span>What We Do page</span>
+                    </paper-button>
+                </td>
+                <td class="right">
+                    <paper-button on-tap="_handleAction" data-action="OfficeImport">
+                        <iron-icon icon="bizsrt:place"></iron-icon>
+                        <span>Office Bulk Import</span>
+                    </paper-button>
+                </td>
+            </tr>
+        </table>
+    </template>
+    <script>
+        (function () {
+            'use strict';
+            class PopupMain extends Polymer.Element {
+                static get is() { return 'popup-main'; }
+
+                static get properties() {
+                    return {
+                        selectorUrl: {
+                            type: String,
+                            value: ''
+                        },
+
+                        hideSelector: {
+                            reflectToAttribute: true,
+                            type: Boolean,
+                            value: true
+                        }
+                    }
+                }
+
+                ready() {
+                    super.ready();
+                    chrome.tabs.query({ active: true, currentWindow: true }, (activeTab) => {
+                        if (activeTab && activeTab.length)
+                            activeTab = activeTab[0];
+                        else
+                            return;
+                        if (activeTab && activeTab.url && activeTab.url.indexOf("http") == 0) {
+                            this.selectorUrl = activeTab.url;
+                            this.hideSelector = false;
+                        }
+                    });
+                }
+
+                _handleAction(event) {
+                    switch (event.currentTarget.dataset['action']) {
+                        case "BusinessProfile":
+                            this.activateExtensionTab('BusinessProfile');
+                            break;
+                        case "BusinessProduct":
+                            this.activateExtensionTab('BusinessProduct');
+                            break;
+                        case "MultiProduct":
+                            this.activateExtensionTab('MultiProduct');
+                            break;
+                        case "OfficeImport":
+                            this.activateExtensionTab('OfficeImport');
+                            break;
+                    }
+                }
+
+                activateExtensionTab(actionPage) {
+                    /*var background = chrome.extension.getBackgroundPage();
+                    if (background) //Chrome will freeze
+                        background.activateExtensionTab(actionPage);*/
+
+                    console.log("popup.activateExtensionTab: sendMessage(bizsrtAdminActionPage)");
+                    chrome.runtime.sendMessage({
+                        bizsrtAdminActionPage: actionPage
+                    });
+                }
+            }
+            customElements.define(PopupMain.is, PopupMain);
+        })();
+    </script>
+</dom-module>
+

@@ -1,0 +1,153 @@
+﻿<link rel="import" href="../../import/iron-dropdown/iron-dropdown.html" />
+<link rel="import" href="../../import/iron-selector/iron-selector.html" />
+
+<dom-module id="group-autocomplete">
+    <template>
+        <style>
+            .listbox {
+                display: block;
+                border-radius: 0 0 2px 2px;
+                background-color: var(--dropdown-background-color, var(--primary-background-color));
+                border-top: 1px solid var(--paper-grey-300);
+                overflow: hidden;
+                @apply --shadow-elevation-2dp;
+            }
+
+            .listbox div {
+                display: block;
+                cursor: pointer;
+                padding: 0 4px;
+                text-overflow: ellipsis;
+                overflow: hidden;
+                white-space: nowrap;
+                line-height: 30px;
+                text-align: left;
+                /*font-size: 13px;*/
+                color: black;
+            }
+
+            .listbox div span.path {
+                font-size: 13px;
+                color: var(--paper-grey-500);
+            }
+
+            .listbox div:hover {
+                background-color: var(--paper-grey-50);
+            }
+
+            .listbox div:not(:last-of-type) {
+                border-bottom: 1px solid var(--paper-grey-300);
+            }
+
+            [hidden] {
+                display: none !important;
+            }
+        </style>
+        <slot></slot>
+        <iron-dropdown id="dropdown" opened="[[_ensureOpened(model.Active,model.Items)]]" horizontal-align="[[horizontalAlign]]" position-target="[[positionTarget]]" allow-outside-scroll>
+            <iron-selector class="listbox" selectable="div" slot="dropdown-content">
+                <dom-repeat items="[[model.Items]]">
+                    <template>
+                        <div><span>[[item.Name]]</span><span class="path" hidden$="[[!item.Path]]">[[_itemPath(item)]]</span></div>
+                    </template>
+                </dom-repeat>
+            </iron-selector>
+        </iron-dropdown>
+    </template>
+    <script>
+        import { Autocomplete as GroupAutocomplete$ } from './autocomplete'
+        var $active;
+        /** @polymerElement */
+        class GroupAutocomplete extends Polymer.Element {
+            static get is() { return 'group-autocomplete'; }
+                
+            static get properties() {
+                return {
+                    model: Object,
+                    horizontalAlign: {
+                        type: String,
+                        value: 'left',
+                        reflectToAttribute: true
+                    },
+                    positionTarget: {
+                        type: Element
+                    },
+                    disabled: {
+                        type: Boolean,
+                        value: false
+                    },
+                    pathPrompt: {
+                        type: String,
+                        value: ' in '
+                    },
+                    pathDelimiter: {
+                        type: String,
+                        value: ', '
+                    }
+                }
+            }
+
+            static get observers() {
+                return [
+                    '_disabledChanged(disabled)',
+                    '_activeChanged(model.Active)'
+                ];
+            }
+
+            constructor() {
+                super();
+                this.addEventListener('iron-activate', e => {
+                    if (this.model.Items && e.detail.selected >= 0 && e.detail.selected < this.model.Items.length)
+                        this.model.ItemSelected(this.model.Items[e.detail.selected]);
+                    this.model.Active = false;
+                });
+                this.addEventListener('iron-overlay-closed', e => {
+                    this.model.Active = false;
+                    e.stopPropagation();
+                });
+            }
+
+            ready () {
+                this.model = new GroupAutocomplete$(new View.DomModule(this));
+                this.model.Disabled = this.disabled;
+                super.ready();
+                this.model.Initialize();
+                //Mixins.AutocompleteMaster.ready
+                /*if (!this.positionTarget)
+                    this.positionTarget = Polymer.dom(this).queryDistributedElements('.dropdown-trigger')[0];*/
+            }
+
+            _disabledChanged (disabled) {
+                if(this.model)
+                    this.model.Disabled = disabled;
+            }
+
+            _ensureOpened (active, items) {
+                if (active && items && items.length) {
+                    //Don't show the popup when Autocomplete is pre-populated during page initialization
+                    //if (Page.Current.ViewModel.View.HostElement.isAttached||isConnected)
+                    return true;
+                }
+
+                return false;
+            }
+
+            _activeChanged (active) {
+                if (active) {
+                    if ($active && $active != this)
+                        $active.model.Active = false;
+                    $active = this;
+                    if (!this.$.dropdown.verticalOffset && this.positionTarget)
+                        this.$.dropdown.verticalOffset = this.positionTarget.clientHeight;
+                }
+                else if ($active && $active == this)
+                    $active = null;
+            }
+
+            _itemPath (item) {
+                return item.Path && item.Path.length ? this.pathPrompt + item.Path.join(this.pathDelimiter) : '';
+            }
+        }
+        customElements.define(GroupAutocomplete.is, GroupAutocomplete);
+    </script>
+</dom-module>

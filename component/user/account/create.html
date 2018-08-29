@@ -1,0 +1,58 @@
+﻿<link rel="import" href="../../../import/paper-button/paper-button.html" />
+<link rel="import" href="../../../import/paper-icon-button/paper-icon-button.html" />
+<link rel="import" href="../../../import/paper-input/paper-input.html" />
+
+<dom-module id="account-create">
+    <template>
+        <style include="popup-dialog-content-styles">
+            :host {
+                @apply --layout-vertical;
+                position: relative;
+            }
+
+            .close {
+                position:absolute; 
+                top: 0; 
+                right: 0;
+                margin-top: 0;
+                padding: 10px;
+            }
+
+            paper-button {
+                background: var(--dialog-button-color);
+                color: var(--dialog-button-text-color, var(--header-text-color));
+            }
+        </style>
+        <h2 class="content-item">Create new Account</h2>
+        <div class="content-item">Please visit <a href$="http://[[settings.Origin.Host]]" target="_blank" on-tap="bizsort">Bizsort</a> web site to create an account</div>
+        <paper-button class="content-item footer" raised on-tap="bizsort">Ok</paper-button>
+        <paper-icon-button class="close" icon="bizsrt:arrow-back" on-tap="_close"></paper-icon-button>
+    </template>
+    <script>
+        import { WebSite as WebSiteSettings } from '../../../src/settings';
+        /** @polymerElement */
+        class AccountCreate extends Polymer.Element {
+            static get is() { return 'account-create'; }
+
+            static get properties() {
+                return {
+                    settings: {
+                        type: Object,
+                        value: function () { return WebSiteSettings; }
+                    }
+                }
+            }
+
+            _close () {
+                this.dispatchEvent(new CustomEvent('switch-page', { composed: true }));
+            }
+
+            bizsort (event) {
+                window.open('http://' + WebSiteSettings.Origin.Host, '_blank');
+                event.preventDefault(); //supress href navigation
+                this._close();
+            }
+        }
+        customElements.define(AccountCreate.is, AccountCreate);
+    </script>
+</dom-module>

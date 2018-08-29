@@ -1,0 +1,39 @@
+﻿<link rel="import" href="../../../import/paper-checkbox/paper-checkbox.html" />
+<link rel="import" href="../../../import/paper-toggle-button/paper-toggle-button.html" />
+<link rel="import" href="../../category/checkedit.html" />
+
+<dom-module id="business-industry-edit">
+    <template>
+        <style>
+            paper-checkbox {
+                margin-left: 10px;
+                margin-top: 10px;
+            }
+
+            [hidden] {
+                display: none !important;
+            }
+        </style>
+        <paper-toggle-button class="content-item" invalid="[[invalid]]" error-message="[[errorMessage]]" checked="{{model.Enabled}}" disabled="[[!model.Values.length]]">Industries<span hidden$="[[!model.Enabled]]">&nbsp;(Check ones that apply)</span></paper-toggle-button>
+        <div class="horizontal layout wrap" hidden$="[[!model.Enabled]]">
+            <template is="dom-repeat" items="[[model.Values]]">
+                <paper-checkbox checked="{{item.Selected}}">[[item.Text]]</paper-checkbox>
+            </template>
+        </div>
+    </template>
+    <script>
+        import { Edit as BusinessIndustryEdit$ } from './edit'
+        /**
+        * @polymerElement
+        * @mixes Mixins.MultiCheckEdit */
+        class BusinessIndustryEdit extends Mixins.MultiCheckEdit(Polymer.Element) {
+            static get is() { return 'business-industry-edit'; }
+
+            ready() {
+                this.model = new BusinessIndustryEdit$(new View.DomModule(this));
+                super.ready(); //will call model.Initialize()
+            }
+        }
+        customElements.define(BusinessIndustryEdit.is, BusinessIndustryEdit);
+    </script>
+</dom-module>

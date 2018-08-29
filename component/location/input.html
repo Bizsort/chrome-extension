@@ -1,0 +1,55 @@
+﻿<link rel="import" href="../../import/google-apis/google-maps-api.html" />
+<link rel="import" href="../../import/paper-input/paper-input.html" />
+<link rel="import" href="../../component/validation/validateable.html" />
+
+<dom-module id="location-input">
+    <template>
+        <google-maps-api api-key="[[apiKey]]" libraries="places" on-api-load="_initAutocomplete"></google-maps-api>
+        <div class="vertical layout">
+            <!--InvalidValueError: not an instance of HTMLInputElement
+                http://stackoverflow.com/questions/34063439/invalidvalueerror-not-an-instance-of-htmlinputelement-->
+            <!--<paper-textarea id="location" label="Address" placeholder="Address" value="{{model.Text}}"></paper-textarea>-->
+            <paper-input id="location" label="Location" value="{{model.Text}}"
+                         invalid="[[invalid]]" error-message="[[errorMessage]]"
+                         on-iron-input-ready="_initAutocomplete"></paper-input>
+        </div>
+    </template>
+    <script>
+        import { Input as LocationInput$ } from './input'
+        /** @polymerElement */
+        class LocationInput extends Mixins.Validateable(Polymer.Element) {
+            static get is() { return 'location-input'; }
+
+            static get properties() {
+                return {
+                    model: Object,
+                    apiKey: {
+                        type: String,
+                        value: function () { return Settings.Service.Google.ApiKey; }
+                    }
+                }
+            }
+
+            ready () {
+                this.model = new LocationInput$(new View.DomModule(this));
+                super.ready();
+                this._inputElement = this.$.location.inputElement; //.textarea (paper-textarea)
+                this.model.Initialize();
+                this._initAutocomplete();
+            }
+
+            disconnectedCallback() {
+                super.disconnectedCallback();
+                this.model._geoinput.ClearAutocomplete();
+            }
+
+            _initAutocomplete () {
+                if (this.model && this._inputElement && this._inputElement.inputElement && //Polymer 2.0 input id="nativeInput"
+                    !this.model._geoinput._autocomplete) {
+                    this.model.InitAutocomplete(this._inputElement.inputElement, ['address']);
+                }
+            }
+        }
+        customElements.define(LocationInput.is, LocationInput);
+    </script>
+</dom-module>

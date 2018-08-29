@@ -1,0 +1,62 @@
+﻿<link rel="import" href="import/polymer/polymer-element.html" />
+<link rel="import" href="import/iron-ajax/iron-request.html" />
+<script src="import/web-animations-js/web-animations-next-lite.min.js"></script>
+
+<link rel="import" href="component/mixin.html" />
+<link rel="import" href="component/page/behavior.html" />
+<link rel="import" href="component/user/signin/form.html" />
+<link rel="import" href="images/icons.html" />
+<link rel="import" href="style/global.html" />
+
+<link rel="import" href="business/product.html" />
+<link rel="import" href="business/profile.html" />
+<link rel="import" href="business/multi-product.html" />
+<link rel="import" href="business/office-import.html" />
+
+<dom-module id="business-main">
+    <script>
+        import { Get, Post } from './src/service'
+        class BusinessMain extends Polymer.Element {
+            static get is() { return 'business-main'; }
+            connectedCallback() {
+                super.connectedCallback();
+                var elemName;
+                switch (location.hash) {
+                    case "#profile":
+                        elemName = "business-profile";
+                        break;
+                    case "#product":
+                        elemName = "business-product";
+                        break;
+                    case "#multiProduct":
+                        elemName = "business-multi-product";
+                        break;
+                    case "#officeImport":
+                        elemName = "business-office-import";
+                        break;
+                }
+                chrome.storage.sync.get(['webSiteOrigin', 'serviceOrigin', 'googleApiKey', 'disableCleansing'], (storeItems) => {
+                    if (storeItems.webSiteOrigin)
+                        Settings.WebSite.Origin.Host = storeItems.webSiteOrigin;
+                    var serviceOrigin = storeItems.serviceOrigin || storeItems.webSiteOrigin;
+                    if (serviceOrigin && serviceOrigin != Settings.Service.Origin) {
+                        Settings.Service.Origin = serviceOrigin;
+                        Get.Url(serviceOrigin);
+                        Post.Url(serviceOrigin);
+                    }
+
+                    if (storeItems.googleApiKey)
+                        Settings.Service.Google.ApiKey = storeItems.googleApiKey;
+                    if (storeItems.disableCleansing)
+                        Settings.DisableCleansing = true;
+
+                    if (elemName) {
+                        var elem = document.createElement(elemName);
+                        this.appendChild(elem);
+                    }
+                });
+            }
+        }
+        customElements.define(BusinessMain.is, BusinessMain);
+    </script>
+</dom-module>

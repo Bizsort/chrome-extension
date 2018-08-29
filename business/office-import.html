@@ -1,0 +1,237 @@
+﻿<link rel="import" href="../import/paper-button/paper-button.html" />
+<link rel="import" href="../import/paper-datatable-api/paper-datatable-api-column.html">
+<link rel="import" href="../import/paper-datatable-api/paper-datatable-api.html">
+<link rel="import" href="../import/paper-icon-button/paper-icon-button.html" />
+<link rel="import" href="../import/paper-input/paper-input.html" />
+<link rel="import" href="../component/confirm/form.html" />
+<link rel="import" href="../component/business/office/listview.html" />
+<link rel="import" href="../component/gwc/google-sheets.html">
+<link rel="import" href="../component/list/header.html" />
+<link rel="import" href="../component/list/pager.html" />
+<link rel="import" href="../component/page/behavior.html" />
+<link rel="import" href="../component/popup/message-toast.html" />
+<link rel="import" href="../component/user/signin/form.html" />
+<link rel="import" href="../component/validation/context.html" />
+
+<dom-module id="business-office-import">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            #content {
+                padding-bottom: 15px;
+                @apply --center-auto-h;
+                max-width: 80%;
+            }
+
+            .header {
+                @apply --layout-center;
+                margin-bottom: 20px;
+            }
+
+            .title {
+                @apply --paper-font-title;
+                min-height: 28px;
+                margin-left: 20px;
+            }
+
+            label {
+                color: var(--paper-input-container-color, var(--secondary-text-color));
+                @apply --paper-font-subhead;
+                @apply --paper-input-container-label;
+            }
+
+            .businessName h2 {
+                display: inline-block;
+                padding-left: 10px;
+            }
+
+            paper-datatable-api,
+            business-office-listview {
+                /*font-family: 'Roboto', 'Noto', sans-serif;
+                font-size: 14px;
+                background-color: var(--paper-grey-50);*/
+                margin-bottom: 15px;
+            }
+
+            paper-icon-button {
+                color: var(--paper-input-container-color, var(--secondary-text-color));
+            }
+
+            paper-button.solid {
+                background-color: var(--header-background-color);
+                color: var(--header-text-color);
+            }
+
+            paper-button.delete {
+                color: var(--action-accent-color);
+            }
+        </style>
+        <div id="content" class="vertical layout">
+            <div class="header self-center horizontal layout center">
+                <img src="../images/bizsort-48.png" alt="Bizsort Logo">
+                <div class="title">Company Office Bulk Import #[[model.Business.Id]]</div>
+            </div>
+            <div class="businessName self-center horizontal layout center"><label>Business name</label>&nbsp;<h2>[[model.Business.Name]]</h2></div>
+            <div class="self-center horizontal layout" style="width:600px;">
+                <paper-input id="webSite" label="Web site url" value="{{model.WebSite}}" class="flex"></paper-input>
+                <paper-button class="self-end" on-tap="_handleAction" data-action="Load">Load from Bizsort</paper-button>
+            </div>
+            <div class="self-center horizontal layout" style="width:600px;">
+                <paper-input id="sheetUrl" label="New Offices Sheet" value="{{sheetId}}" class="flex">
+                    <paper-icon-button icon="bizsrt:launch" on-tap="_handleAction" data-action="OpenSheet" suffix></paper-icon-button>
+                </paper-input>
+                <paper-button class="self-end" on-tap="_handleAction" data-action="LoadSheet">Load Sheet</paper-button>
+            </div>
+            <div><label>New Offices</label></div>
+            <paper-datatable-api id="dataTable" data="[[offices]]" selectable>
+                <paper-datatable-api-column header="Name" property="gsx$name.$t">
+                    <template>
+                        [[value]]
+                    </template>
+                </paper-datatable-api-column>
+                <paper-datatable-api-column header="Address" property="gsx$address.$t">
+                    <template>
+                        [[value]]
+                    </template>
+                </paper-datatable-api-column>
+                <paper-datatable-api-column header="Postal code" property="gsx$zip.$t">
+                    <template>
+                        [[value]]
+                    </template>
+                </paper-datatable-api-column>
+                <paper-datatable-api-column header="Unit/Suite" property="gsx$unit.$t">
+                    <template>
+                        [[value]]
+                    </template>
+                </paper-datatable-api-column>
+                <paper-datatable-api-column name="Phone" property="gsx$phone.$t">
+                    <template>
+                        [[value]]
+                    </template>
+                </paper-datatable-api-column>
+                <paper-datatable-api-column name="Fax" property="gsx$fax.$t">
+                    <template>
+                        [[value]]
+                    </template>
+                </paper-datatable-api-column>
+            </paper-datatable-api>
+            <div class="self-center horizontal layout">
+                <paper-button class="solid" on-tap="_handleAction" data-action="Merge">Merge New Offices</paper-button>
+            </div>
+            <div class="horizontal layout center">
+                <label>Existing Offices</label>
+                <list-header id="listHeader"></list-header>
+            </div>
+            <business-office-listview id="listView" selected-items="{{model.SelectedItems}}"></business-office-listview>
+            <list-pager id="listPager" class="self-center" master="[[model.Pager]]"></list-pager>
+            <div class="self-center horizontal layout">
+                <paper-button class="delete" on-tap="_handleAction" data-action="Delete">Delete Offices</paper-button>
+                <paper-button class="solid" on-tap="_handleAction" data-action="Submit">Update Offices</paper-button>
+            </div>
+        </div>
+        <google-sheets id="sheet" key="[[sheetId]]" tab-id="1"
+                       published rows="{{offices}}" tab="1" open-in-google-docs-url="{{googleSheetsUrl}}"></google-sheets>
+        <message-toast id="success" text="Your information has been saved successfully."></message-toast>
+        <message-toast id="error" text="{{model.Error}}" error></message-toast>
+        <confirm-form id="deleteConfirm"></confirm-form>
+        <signin-form id="signIn"></signin-form>
+    </template>
+    <script>
+        import { OfficeImport as BusinessOfficeImport$, ReadyState } from './officeImport';
+        /**
+        * @polymerElement
+        * @mixes Mixins.Page */
+        class BusinessOfficeImport extends Mixin(Polymer.Element).with(Mixins.Page, Mixins.ValidationContext) {
+            static get is() { return 'business-office-import'; }
+
+            static get properties() {
+                return {
+                    sheetId: {
+                        type: String,
+                        value: "1pumJpO0RooxQEFnvuFaOrhqw1Zq7wQRLskXP20UQMUU"
+                    },
+                    googleSheetsUrl: String
+                }
+            }
+
+            constructor() {
+                super(BusinessOfficeImport$);
+            }
+
+            ready() {
+                super.ready();
+                if (this.model.Initialized) {
+                    this.model.PropertyChange.AddHandler((sender, e) => {
+                        if (e.name == 'ReadyState') {
+                            if ((e.value & ReadyState.Success) > 0)
+                                this.$.success.show();
+                            else if ((e.value & ReadyState.Error) > 0 && this.$.error)
+                                this.$.error.show();
+                        }
+                    });
+                }
+            }
+
+            handleAction(action) { //_launchGoogleSheets: function (event)
+                switch (action) {
+                    case "Merge":
+                        var selected = [];
+                        var selectedItems = this.$.dataTable.selectedRows.slice(); //make a copy
+                        if (selectedItems && selectedItems.length) {
+                            for (var i = 0, l = selectedItems.length; i < l; i++) {
+                                var count = 0;
+                                var item = this.offices[selectedItems[i]];
+                                this.model.MergeOffice({
+                                    Name: String.toTitleCase(item.gsx$name.$t),
+                                    Address: {
+                                        Text: item.gsx$address.$t,
+                                        PostalCode: item.gsx$zip.$t,
+                                        Address1: item.gsx$unit.$t
+                                    },
+                                    Phone: String.formatPhone(item.gsx$phone.$t),
+                                    Fax: String.formatPhone(item.gsx$fax.$t)
+                                }, (success, arg) => {
+                                    if (success) {
+                                        //https://github.com/RoXuS/paper-datatable-api/issues/48
+                                        //this.$.dataTable.deselectItem(arg);
+                                        if (++count === l) {
+                                            this.$.dataTable.selectedRows = selected;
+                                            this.$.dataTable._dataChanged(this.offices);
+                                            this.model.populateList();
+                                        }
+                                    }
+                                    else if (typeof arg === 'number')
+                                        selected.push(arg);
+                                }, (ex, arg) => {
+                                    if (typeof arg === 'number')
+                                        selected.push(arg);
+                                    if (!this.model._validateable.Error)
+                                        this.model._submittable.Invalidate(ex);
+                                    if (++count === l) {
+                                        this.$.dataTable.selectedRows = selected;
+                                        this.$.dataTable._dataChanged(this.offices);
+                                        this.model.populateList();
+                                    }
+                                }, selectedItems[i]);
+                            }
+                        }
+                        break;
+                    case "LoadSheet":
+                        this.$.dataTable.selectedRows = [];
+                        if (this.$.sheet.key != this.sheetId)
+                            this.$.sheet.key = this.sheetId;
+                        else
+                            this.$.sheet._keyChanged();
+                        break;
+                    case "OpenSheet":
+                        if (this.googleSheetsUrl) {
+                            window.open(this.googleSheetsUrl, '_blank');
+                            return true;
+                        }
+                        break;
+                }
+                return false;
+            }
+        }
+        customElements.define(BusinessOfficeImport.is, BusinessOfficeImport);
+    </script>
+</dom-module>

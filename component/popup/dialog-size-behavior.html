@@ -1,0 +1,49 @@
+﻿<script>
+    (function () {
+        var margin_y = 24;
+        var margin_x = 40;
+        'use strict';
+        /** @polymerMixin */
+        Mixins.PopupDialogSize = (superclass) => class extends superclass {
+
+            constructor() {
+                super();
+                this.addEventListener('iron-overlay-opened', e => {
+                    this._ironResize(0);
+                });
+            }
+
+            _ironResize(desiredWidth) {
+                var width = Math.floor(document.documentElement.clientWidth); //Page.Current.ContentWidth
+                if (width && this.$.popup.opened) {
+                    var updateStyles = {}, overflow;
+                    var height = Page.Current.ContentHeight, rect = this.$.popup.getBoundingClientRect();
+                    if (height <= (rect.bottom - rect.top + 2 * margin_y)) {
+                        updateStyles['--dialog-margin-y'] = '0';
+                        overflow = true;
+                    }
+                    else
+                        updateStyles['--dialog-margin-y'] = `${margin_y}px`;
+
+                    if (width <= (rect.right - rect.left + 2 * margin_x)) {
+                        updateStyles['--dialog-margin-x'] = '0';
+                        overflow = true;
+                    }
+                    else
+                        updateStyles['--dialog-margin-x'] = `${margin_x}px`;
+
+                    if (overflow)
+                        updateStyles['--popup-dialog-overflow'] = 'auto';
+                    else
+                        updateStyles['--popup-dialog-overflow'] = 'initial';
+
+                    if (typeof desiredWidth === 'number')
+                        updateStyles['--dialog-width'] = (desiredWidth > 0 ? `${desiredWidth}px` : '');
+
+                    this.updateStyles(this.handleResize ? this.handleResize(updateStyles, width, height, rect) : updateStyles);
+                    this.$.popup.refit();
+                }
+            }
+        };
+    })();
+</script>

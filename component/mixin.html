@@ -1,0 +1,15 @@
+﻿<script>
+    window.Mixins = window.Mixins || {};
+
+    //http://stackoverflow.com/questions/41839198/applying-behaviors-with-js-mixins-in-polymer-2
+    window.Mixin = (superclass) => new MixinBuilder(superclass);
+    class MixinBuilder {
+        constructor(superclass) {
+            this.superclass = superclass;
+        }
+
+        with(...mixins) {
+            return mixins.reduceRight((klass, mixin) => mixin(klass), this.superclass);
+        }
+    }
+</script>

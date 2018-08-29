@@ -1,0 +1,90 @@
+﻿<link rel="import" href="../../import/iron-a11y-keys-behavior/iron-a11y-keys-behavior.html">
+<link rel="import" href="../../import/iron-behaviors/iron-control-state.html">
+
+<!--paper-menu-button-->
+<dom-module id="popup-button">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+                padding: 8px;
+                outline: none;
+
+                @apply --popup-button;
+            }
+
+            :host([disabled]) {
+                cursor: auto;
+                color: var(--disabled-text-color);
+
+                @apply --popup-button-disabled;
+            }
+        </style>
+        <div id="trigger" on-tap="open">
+            <slot name="popup-trigger"></slot>
+        </div>
+        <dom-if if="[[preAssembled]]">
+            <template>
+                <slot name="popup-content"></slot>
+            </template>
+        </dom-if>
+        <dom-if if="[[!preAssembled]]">
+            <template>
+                <paper-dialog id="popup"
+                              opened="{{opened}}"
+                              modal="[[modal]]">
+                    <slot name="popup-content"></slot>
+                </paper-dialog>
+            </template>
+        </dom-if>
+    </template>
+    <script>
+        (function () {
+            'use strict';
+            class PopupButton extends Polymer.Element {
+                static get is() { return 'popup-button'; }
+
+                static get properties() {
+                    return {
+                        opened: {
+                            type: Boolean,
+                            value: false,
+                            notify: true //important
+                        },
+
+                        preAssembled: {
+                            type: Boolean,
+                            value: false
+                        },
+
+                        modal: {
+                            type: Boolean,
+                            value: false
+                        }
+                    }
+                }
+
+                open() {
+                    if (this.disabled) {
+                        return;
+                    }
+
+                    this.opened = true;
+                }
+
+                close() {
+                    this.opened = false;
+                }
+
+                _disabledChanged(disabled) {
+                    Polymer.IronControlState._disabledChanged.apply(this, arguments);
+                    if (disabled && this.opened) {
+                        this.close();
+                    }
+                }
+            }
+            customElements.define(PopupButton.is, PopupButton);
+        })();
+    </script>
+</dom-module>

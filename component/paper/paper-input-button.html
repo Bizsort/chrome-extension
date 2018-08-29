@@ -1,0 +1,78 @@
+<link rel="import" href="../../import/paper-button/paper-button.html" />
+<link rel="import" href="../../import/paper-icon-button/paper-icon-button.html" />
+
+<dom-module id="paper-input-button">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+            }
+
+            paper-icon-button {
+                color: var(--paper-red-300);
+                --paper-icon-button-ink-color: var(--paper-red-a100);
+                width: 23px; /* 15px + 2*4px for padding */
+                height: 23px;
+                padding: 0px 4px;
+            }
+
+            paper-input {
+                @apply --paper-input;
+            }
+
+            paper-button {
+                @apply --paper-button;
+            }
+
+            [hidden] {
+                display: none !important;
+            }
+        </style>
+        <paper-input label="[[label]]" value="{{value}}" hidden$="[[noValue]]"
+                     allowed-pattern="[[allowedPattern]]" prevent-invalid-input>
+            <paper-icon-button icon="bizsrt:close" on-tap="_hideInput" alt="Use default" title="Use default" slot="suffix"></paper-icon-button>
+        </paper-input>
+        <paper-button class="show-input" on-tap="_showInput" hidden$="[[!noValue]]">[[label]]</paper-button>
+    </template>
+    <script>
+        (function () {
+            'use strict';
+            /** @polymerElement */
+            class PaperInputButton extends Polymer.Element {
+                static get is() { return 'paper-input-button'; }
+
+                static get properties() {
+                    return {
+                        label: {
+                            type: String,
+                            value: 'New Value'
+                        },
+                        value: {
+                            type: Number,
+                            notify: true //important
+                        },
+                        noValue: {
+                            type: Boolean,
+                            value: true,
+                            notify: true //important
+                        },
+                        allowedPattern: String
+                    }
+                }
+
+                _hideInput() {
+                    this.useDefault = true;
+                }
+
+                _hideInput() {
+                    this.noValue = true;
+                }
+
+                _showInput() {
+                    this.noValue = false;
+                }
+            }
+            customElements.define(PaperInputButton.is, PaperInputButton);
+        })();
+    </script>
+</dom-module>

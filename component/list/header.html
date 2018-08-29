@@ -1,0 +1,80 @@
+﻿<dom-module id="list-header">
+    <template>
+        <style>
+            :host {
+                @apply --paper-font-common-base;
+                font-size: 14px;
+                line-height: 40px;
+                color: var(--list-header-text-color, var(--page-accent-color));
+                padding: 0px 8px 0px 16px;
+                box-sizing: border-box;
+            }
+
+            /*span {
+                font-weight: 400;
+                line-height: 20px;
+            }*/
+
+            span.query-empty {
+                font-size: 15px;
+            }
+
+            span.query-string {
+                font-weight: 500;
+            }
+
+            span.empty {
+                color: var(--list-header-empty-color, var(--page-accent-color));
+            }
+        </style>
+        <!--<span>[[model.Text]]</span>-->
+        <dom-if if="[[!_emptySearch(model.Data)]]">
+            <template>
+                <span class$="[[_headerClass(model.Data)]]">[[model.Text]]</span>
+            </template>
+        </dom-if>
+        <dom-if if="[[_emptySearch(model.Data)]]">
+            <template>
+                <span><span class="query-empty">Your search for <span class="query-string">[[model.Data.Query]]</span> did not return any results.</span><br />You may try widening category and/or location scope of your search.</span>
+            </template>
+        </dom-if>
+    </template>
+    <script>
+        import { Header as ListHeader$ } from './header'
+        /** @polymerElement */
+        class ListHeader extends Polymer.Element {
+            static get is() { return 'list-header'; }
+
+            static get properties() {
+                return {
+                    model: Object,
+                    entity: {
+                        type: String,
+                        observer: '_entityChanged'
+                    }
+                }
+            }
+
+            _emptySearch (data) {
+                return data && data.IsEmpty && data.Query ? true : false;
+            }
+
+            _headerClass (data) {
+                return data && data.IsEmpty ? 'empty' : '';
+            }
+
+            ready () {
+                this.model = new ListHeader$(new View.DomModule(this));
+                super.ready();
+                this.model.Initialize();
+                this._entityChanged(this.entity);
+            }
+
+            _entityChanged (entity) {
+                if (this.model && entity)
+                    this.model.Entity = this.entity;
+            }
+        }
+        customElements.define(ListHeader.is, ListHeader);
+    </script>
+</dom-module>

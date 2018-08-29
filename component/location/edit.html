@@ -1,0 +1,104 @@
+﻿<link rel="import" href="../../import/google-apis/google-maps-api.html" />
+<link rel="import" href="../../import/paper-button/paper-button.html" />
+<link rel="import" href="../../import/paper-input/paper-input.html" />
+<link rel="import" href="../../component/validation/validateable.html" />
+
+<dom-module id="location-edit">
+    <template>
+        <style>
+            .second-line {
+                @apply --layout-horizontal;
+            }
+
+                .second-line paper-input {
+                    @apply --layout-flex;
+                }
+
+                .second-line div {
+                    @apply --layout-self-end;
+                }
+
+            paper-button {
+                white-space: nowrap;
+                padding-right: 0;
+            }
+
+            [hidden] {
+                display: none !important;
+            }
+        </style>
+        <!--InvalidValueError: not an instance of HTMLInputElement
+            http://stackoverflow.com/questions/34063439/invalidvalueerror-not-an-instance-of-htmlinputelement-->
+        <!--<paper-textarea id="location" label="Address" placeholder="Address" value="{{model.Text}}"></paper-textarea>-->
+        <paper-input id="location" label="Address" placeholder="Address" value="{{model.Text}}"
+                     invalid="[[invalid]]" error-message="[[errorMessage]]"></paper-input>
+        <div class="second-line">
+            <paper-input label="Suite, Unit, PO etc" value="{{model.Address1}}"
+                         on-iron-input-ready="_initAutocomplete"></paper-input>
+            <div>
+                <paper-button on-tap="postalCodeClick" hidden$="{{postalCode}}">Postal code</paper-button>
+                <paper-input label="Postal code" value="{{model.PostalCode}}" hidden$="{{!postalCode}}"></paper-input>
+            </div>
+        </div>
+        <google-maps-api api-key="[[apiKey]]" libraries="places" on-api-load="_initAutocomplete"></google-maps-api>
+    </template>
+    <script>
+        import { Edit as LocationEdit$ } from './edit'
+        /** @polymerElement */
+        class LocationEdit extends Mixins.Validateable(Polymer.Element) {
+            static get is() { return 'location-edit'; }
+
+            static get properties() {
+                return {
+                    model: Object,
+                    address: {
+                        type: Object,
+                        observer: '_addressChanged'
+                    },
+                    postalCode: {
+                        reflectToAttribute: true,
+                        type: Boolean,
+                        value: false
+                    },
+                    apiKey: {
+                        type: String,
+                        value: function () { return Settings.Service.Google.ApiKey; }
+                    }
+                }
+            }
+
+            ready() {
+                this.model = new LocationEdit$(new View.DomModule(this));
+                super.ready();
+                this._inputElement = this.$.location.inputElement; //.textarea (paper-textarea)
+                this._initAutocomplete();
+                if (this.address)
+                    this.setAddress(this.address);
+            }
+
+            _addressChanged(address) {
+                if (this.model && address)
+                    this.setAddress(address);
+            }
+
+            setAddress(address) {
+                this.model.Text = '';
+                this.model.PostalCode = address.PostalCode || '';
+                this.model.Address1 = address.Address1 || '';
+                this.model.Address = address;
+            }
+
+            _initAutocomplete() {
+                if (this.model && this._inputElement && this._inputElement.inputElement && //Polymer 2.0 input id="nativeInput"
+                    !this.model._geoedit._autocomplete) {
+                        this.model.InitAutocomplete(this._inputElement.inputElement, ['address']);
+                }
+            }
+
+            postalCodeClick() {
+                this.postalCode = true;
+            }
+        }
+        customElements.define(LocationEdit.is, LocationEdit);
+    </script>
+</dom-module>

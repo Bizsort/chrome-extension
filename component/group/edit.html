@@ -1,0 +1,125 @@
+﻿<link rel="import" href="../../import/paper-ripple/paper-ripple.html">
+<link rel="import" href="../paper/textarea-suffix.html">
+<link rel="import" href="../validation/validateable.html" />
+
+<!--paper-dropdown-menu-->
+<dom-module id="group-edit">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+                position: relative;
+                text-align: left;
+
+                /* NOTE(cdata): Both values are needed, since some phones require the
+                 * value to be `transparent`.
+                 */
+                -webkit-tap-highlight-color: rgba(0,0,0,0);
+                -webkit-tap-highlight-color: transparent;
+
+                --paper-input-container-input: {
+                  overflow: hidden;
+                  white-space: nowrap;
+                  text-overflow: ellipsis;
+                  max-width: 100%;
+                  box-sizing: border-box;
+                  cursor: pointer;
+                };
+
+                @apply --paper-dropdown-menu;
+            }
+
+            paper-ripple {
+                top: 12px;
+                left: 0px;
+                bottom: 8px;
+                right: 0px;
+
+                @apply --paper-dropdown-menu-ripple;
+            }
+
+            paper-textarea-suffix {
+                --paper-input-container-input: {
+                    cursor: pointer;
+                };
+            }
+
+            iron-icon {
+                color: var(--disabled-text-color);
+                @apply --paper-dropdown-menu-icon;
+            }
+        </style>
+        <paper-ripple></paper-ripple>
+        <paper-textarea-suffix value="[[_concat(model.Items)]]" rows="1" max-rows="0"
+                               readonly
+                               label="[[label]]"
+                               invalid="[[invalid]]"
+                               error-message="[[errorMessage]]" 
+                               always-float-label
+                               on-tap="open">
+            <iron-icon icon="bizsrt:arrow-drop-down" slot="suffix"></iron-icon>
+        </paper-textarea-suffix>
+    </template>
+    <script>
+        import { Edit as GroupEdit$ } from './edit';
+        /** @polymerElement */
+        class GroupEdit extends Polymer.mixinBehaviors([Polymer.IronButtonState, Polymer.IronControlState], Polymer.Element) { //Mixins.Validateable //ViewModel exposes a Validate method only, not the full Validateable
+            static get is() { return 'group-edit'; }
+
+            static get properties() {
+                return {
+                    model: Object,
+                    label: {
+                        type: String
+                    },
+                    config: {
+                        type: Object,
+                        observer: '_configChanged'
+                    },
+                    value: {
+                        type: Number,
+                        observer: '_valueChanged'
+                    },
+                    invalid: {
+                        type: Boolean,
+                        value: false,
+                        notify: true
+                    },
+                    errorMessage: {
+                        type: String
+                    }
+                }
+            }
+
+            ready() {
+                this._ensureAttribute('role', 'error-container');
+                this.model = new GroupEdit$(new View.DomModule(this));
+                super.ready();
+                this.model.Initialize();
+                this._configChanged(this.config);
+            }
+
+            _configChanged(config) {
+                if (this.model && config) {
+                    this.model.Config = config;
+                    this._valueChanged(this.value);
+                }
+            }
+
+            _valueChanged (value) {
+                if (this.model && typeof value !== 'undefined' && this.config)
+                    this.model.Populate(value);
+            }
+
+            open() {
+            }
+
+            _concat(values) {
+                return values && values.map(function (v) {
+                    return v.Name;
+                }).join(' > ');
+            }
+        }
+        customElements.define(GroupEdit.is, GroupEdit);
+    </script>
+</dom-module>

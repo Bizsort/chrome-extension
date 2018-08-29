@@ -1,0 +1,42 @@
+﻿<link rel="import" href="../../import/paper-dialog-behavior/paper-dialog-behavior.html" />
+<link rel="import" href="dialog-content-styles.html" />
+<link rel="import" href="dialog-size-behavior.html" />
+
+<!--paper-dialog-shared-styles.html-->
+<dom-module id="popup-dialog">
+    <template>
+        <style>
+            :host {
+                display: block;
+                margin: 24px 40px;
+                -webkit-overflow-scrolling: touch;
+                background: var(--popup-dialog-background-color, var(--primary-background-color));
+                color: var(--paper-dialog-color, var(--primary-text-color));
+
+                @apply --paper-font-body1;
+                @apply --shadow-elevation-16dp;
+                @apply --paper-dialog;
+            }
+        </style>
+        <slot></slot>
+    </template>
+    <script>
+        (function () {
+            'use strict';
+            /** @polymerElement */
+            class PopupDialog extends Polymer.mixinBehaviors(Polymer.PaperDialogBehavior/*Polymer.IronOverlayBehavior*/, Polymer.Element) {
+                static get is() { return 'popup-dialog'; }
+
+                static get properties() {
+                    return {
+                        scrollAction: {
+                            type: String,
+                            value: 'lock'
+                        }
+                    }
+                }
+            }
+            customElements.define(PopupDialog.is, PopupDialog);
+        })();
+    </script>
+</dom-module>

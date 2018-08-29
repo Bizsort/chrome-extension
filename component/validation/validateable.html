@@ -1,0 +1,33 @@
+﻿<script>
+    (function () {
+        'use strict';
+        /** @polymerMixin */
+        Mixins.Validateable = (superclass) => class extends superclass {
+
+            static get properties() {
+                return {
+                    //For Elements without Polymer.PaperInputBehavior (location-input)
+                    invalid: {
+                        type: Boolean,
+                        value: false,
+                        notify: true
+                    },
+                    errorMessage: {
+                        type: String
+                    },
+                }
+            }
+
+            ready() {
+                this._ensureAttribute('role', 'error-container');
+                super.ready();
+                //https://github.com/Polymer/polymer/issues/4228
+                this.dispatchEvent(new CustomEvent('validation-element-register', { composed: true, bubbles: true }));
+            }
+
+            set ValidationContext(validationContext) {
+                this.model.Validateable.Context = validationContext;
+            }
+        };
+    })();
+</script>

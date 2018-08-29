@@ -1,0 +1,46 @@
+﻿<script>
+    (function () {
+        'use strict';
+        /** @polymerMixin */
+        Mixins.MultiCheckEdit = (superclass) => class extends superclass {
+            static get properties() {
+                return {
+                    model: Object,
+                    value: {
+                        type: Number,
+                        notify: true,
+                        observer: '_valueChanged'
+                    },
+                    invalid: {
+                        type: Boolean,
+                        value: false
+                    },
+                    errorMessage: String
+                }
+            }
+
+            static get observers() {
+                return [
+                    '_selectedChanged(model.SelectedValue)'
+                ]
+            }
+
+            ready() {
+                this._ensureAttribute('role', 'error-container');
+                super.ready();
+                this._valueChanged();
+                this.model.Initialize();
+            }
+
+            _valueChanged (value) {
+                if (this.model && typeof value !== 'undefined')
+                    this.model.SelectedValue = value;
+            }
+
+            _selectedChanged (selectedValue) {
+                if (selectedValue)
+                    this.value = selectedValue;
+            }
+        }
+    })();
+</script>

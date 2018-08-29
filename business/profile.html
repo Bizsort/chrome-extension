@@ -1,0 +1,212 @@
+﻿<link rel="import" href="../import/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../import/paper-button/paper-button.html" />
+<link rel="import" href="../import/paper-icon-button/paper-icon-button.html" />
+<link rel="import" href="../import/paper-input/paper-input.html" />
+<link rel="import" href="../component/confirm/form.html" />
+<link rel="import" href="../component/group/edit.html" />
+<link rel="import" href="../component/group/select.html" />
+<link rel="import" href="../component/image/edit.html" />
+<link rel="import" href="../component/business/affiliation/edit.html" />
+<link rel="import" href="../component/business/office/edit.html" />
+<link rel="import" href="../component/business/servicetype/edit.html" />
+<link rel="import" href="../component/business/transactiontype/edit.html" />
+<link rel="import" href="../component/business/industry/edit.html" />
+<link rel="import" href="../component/page/behavior.html" />
+<link rel="import" href="../component/popup/message-toast.html" />
+<link rel="import" href="../component/richtext/input.html" />
+<link rel="import" href="../component/user/signin/form.html" />
+<link rel="import" href="../component/validation/context.html" />
+
+<dom-module id="business-profile">
+    <template>
+        <style include="iron-flex iron-flex-alignment">
+            #content {
+                position: relative;
+            }
+
+            .update-date {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+            }
+
+            .header {
+                @apply --layout-center;
+                margin-bottom: 20px;
+            }
+
+            .title {
+                @apply --paper-font-title;
+                min-height: 28px;
+                margin-left: 20px;
+            }
+
+            label,
+            .update-date {
+                color: var(--paper-input-container-color, var(--secondary-text-color));
+                @apply --paper-font-subhead;
+                @apply --paper-input-container-label;
+            }
+
+            paper-icon-button {
+                color: var(--paper-input-container-color, var(--secondary-text-color));
+            }
+
+            paper-button.solid {
+                background-color: var(--header-background-color);
+                color: var(--header-text-color);
+            }
+
+            paper-button.delete {
+                color: var(--action-accent-color);
+            }
+
+            richtext-input {
+                --rich-text-html: {
+                    min-height:200px;
+                    min-width:500px;
+                };
+            }
+        </style>
+        <div id="#content" class="vertical layout center">
+            <div class="header horizontal layout center">
+                <img src="../images/bizsort-48.png" alt="Bizsort Logo">
+                <div class="title">Company profile #[[model.Business.Id]]([[_modeText(model.EditMode)]])</div>
+            </div>
+            <div class="vertical layout start" style="width:500px;">
+                <div class="horizontal layout" style="width:100%;"><paper-input id="webSite" label="Web site url" value="{{model.WebSite}}" class="flex"></paper-input><paper-button class="self-end" on-tap="_handleAction" data-action="Load">Load from Bizsort</paper-button></div>
+                <br />
+                <paper-input id="email" label="Email" value="{{model.Business.Email}}" style="min-width:250px;"></paper-input>
+                <br />
+                <paper-input id="name" label="Business Name" value="{{model.Business.Name}}" style="width:100%;"></paper-input>
+            </div>
+            <div class="vertical layout start" style="max-width:75%;">
+                <group-edit id="category" label="Category" config="[[model.CategoryConfig]]" value="[[model.Business.Category]]" on-tap="_openCategory"></group-edit>
+                <br />
+                <business-transaction-type-edit id="transactionType" value="{{model.Business.TransactionType}}"></business-transaction-type-edit>
+                <br />
+                <business-service-type-edit id="serviceType" value="{{model.Business.ServiceType}}"></business-service-type-edit>
+                <br />
+                <business-industry-edit id="industry" value="{{model.Business.Industry}}"></business-industry-edit>
+                <br />
+                <div class="horizontal layout center"><label>Description</label>&nbsp;<paper-icon-button icon="bizsrt:check-circle" on-tap="_handleAction" data-action="CleanseRichText"></paper-icon-button></div>
+            </div>
+            <richtext-input id="richText" richtext="[[model.Business.RichText]]" style="max-width:80%;">
+                <!--<div id="richText" class="rich-text paper-input-input" contenteditable style="min-width:500px; min-height:200px;"></div>-->
+            </richtext-input>
+            <br />
+            <div class="vertical layout start" style="width:500px;">
+                <business-office-edit id="office" entity="[[model.Business]]" confirm-delete="[[officeDeleteConfirm]]" style="width:100%;"></business-office-edit>
+                <br />
+                <div hidden$="[[!hasImage]]">
+                    <image-edit id="image" entity="[[model.Business]]" label="Image" max-images="1"></image-edit>
+                    <br />
+                </div>
+            </div>
+            <div hidden$="[[!hasAffiliations]]" style="max-width:80%;">
+                <business-affiliation-edit id="affiliations" style="min-width:500px;" entity="[[model.Business]]" label="Affiliations"></business-affiliation-edit>
+                <br />
+            </div>
+            <br />
+            <div class="buttons horizontal layout">
+                <!--<paper-button on-tap="_test">Test</paper-button>-->
+                <paper-button class="delete" on-tap="_handleAction" data-action="Delete">Delete from Bizsort</paper-button>
+                <paper-button on-tap="_handleAction" data-action="CreateNew">Empty Form</paper-button>
+                <paper-button on-tap="_handleAction" data-action="SaveDraft">Save Draft</paper-button>
+                <paper-button class="solid" disabled$="[[_officeNotSaved(model.EditOffice.Draft)]]" on-tap="_handleAction" data-action="Submit">Submit to Bizsort</paper-button>
+            </div>
+            <div class="update-date" hidden$="[[!model.Business.Id]]">
+                <div>Updated: [[_formatDate(model.Business.Updated)]]</div>
+                <div hidden$="[[!createdBy]]">Created: [[createdBy]]</div>
+                <div hidden$="[[!model.Entity.SignedIn]]">SignedIn: [[_formatDate(model.Entity.SignedIn)]]</div>
+            </div>
+        </div>
+        <group-select id="groupSelect" config="[[model.CategoryConfig]]" value="{{model.Business.Category}}" on-selected="_categorySelected"></group-select>
+        <message-toast id="success" text="Your information has been saved successfully."></message-toast>
+        <message-toast id="error" text="{{model.Error}}" error></message-toast>
+        <confirm-form id="deleteConfirm"></confirm-form>
+        <confirm-form model="{{officeDeleteConfirm}}"></confirm-form>
+        <signin-form id="signIn"></signin-form>
+    </template>
+    <script>
+        import { Profile as BusinessProfile$, EditMode, ReadyState } from './profile';
+        import { Account as AccountService } from '../src/service/master'
+        /**
+        * @polymerElement
+        * @mixes Mixins.Page */
+        class BusinessProfile extends Mixin(Polymer.Element).with(Mixins.Page, Mixins.ValidationContext) {
+            static get is() { return 'business-profile'; }
+
+            static get properties() {
+                return {
+                    hasImage: Boolean,
+                    hasAffiliations: Boolean,
+                    createdBy: {
+                        type: String,
+                        value: ''
+                    }
+                }
+            }
+
+            constructor() {
+                super(BusinessProfile$);
+            }
+
+            ready() {
+                super.ready();
+                if (this.model.Initialized) {
+                    this.model.PropertyChange.AddHandler((sender, e) => {
+                        if (e.name == 'Business') {
+                            this.model.reflectCategory(e.value.Category);
+                            if (e.value.CreatedBy)
+                                AccountService.GetName(e.value.CreatedBy, (user) => {
+                                    this.createdBy = user.Name;
+                                });
+                            else if (this.createdBy)
+                                this.createdBy = '';
+                        } else if (e.name == 'ReadyState') {
+                            if ((e.value & ReadyState.Success) > 0)
+                                this.$.success.show();
+                            else if ((e.value & ReadyState.Error) > 0 && this.$.error)
+                                this.$.error.show();
+                        }
+                    });
+                    this.model.Image.PropertyChange.AddHandler((sender, e) => {
+                        if (e.name == 'ImageCount')
+                            this.hasImage = e.value ? true : false;
+                    });
+                    this.model.Affiliations.PropertyChange.AddHandler((sender, e) => {
+                        if (e.name == 'AffiliationCount')
+                            this.hasAffiliations = e.value ? true : false;
+                    });
+                }
+            }
+
+            _modeText(mode) {
+                return EditMode[mode];
+            }
+
+            _formatDate(date) {
+                if (date && typeof date == "string")
+                    return Date.toString(typeof date == "string" ? new Date(JSON.parse(date)) : date);
+            }
+
+            _officeNotSaved(draft) {
+                return draft === -1 ? true : false;
+            }
+
+            _openCategory() {
+                this.$.groupSelect.open();
+            }
+
+            _categorySelected(event) {
+                var category = event.detail;
+                if (category && typeof category.Id !== 'undefined') {
+                    this.model.reflectCategory(category.Id);
+                }
+            }
+        }
+        customElements.define(BusinessProfile.is, BusinessProfile);
+    </script>
+</dom-module>
+

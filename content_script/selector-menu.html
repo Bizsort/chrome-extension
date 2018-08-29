@@ -1,0 +1,373 @@
+﻿<link rel="import" href="../import/polymer/polymer-element.html" />
+<link rel="import" href="../import/iron-dropdown/iron-dropdown.html">
+<link rel="import" href="../import/paper-styles/shadow.html">
+<link rel="import" href="../import/iron-icon/iron-icon.html">
+<link rel="import" href="../import/iron-iconset-svg/iron-iconset-svg.html">
+
+<iron-iconset-svg name="bizsrt" size="24">
+    <svg>
+        <defs>
+            <g id="check"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></g>
+        </defs>
+    </svg>
+</iron-iconset-svg>
+
+<dom-module id="bizsrt-style">
+    <template>
+        <style>
+            * {
+                font: inherit;
+            }
+
+            .dropdown-menu {
+                @apply --shadow-elevation-2dp;
+                border-radius: 2px;
+                background-color: white;
+                color: #545454;
+                font-family: 'Roboto', 'Noto', sans-serif;
+                -webkit-font-smoothing: antialiased;
+                text-rendering: optimizeLegibility;
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 24px;
+                background-clip: padding-box;
+            }
+        </style>
+    </template>
+</dom-module>
+
+<dom-module id="bizsrt-selector-menu">
+    <template>
+        <style include="bizsrt-style">
+            :host {
+                position: absolute;
+            }
+
+            .dropdown-menu {
+                min-width: 150px;
+            }
+
+            bizsrt-menu-item {
+                display: block;
+            }
+
+            iron-dropdown {
+                z-index: 99998 !important;
+            }
+        </style>
+        <iron-dropdown id="dropdown" horizontal-align="auto" vertical-align="auto" no-animations="true" allow-outside-scroll="true">
+            <div class="dropdown-menu" slot="dropdown-content">
+                <template is="dom-repeat" items="[[items]]">
+                    <bizsrt-menu-item item="[[item]]" name="[[item.name]]" notify-active></bizsrt-menu-item>
+                </template>
+            </div>
+        </iron-dropdown>
+        <bizsrt-sub-menu id="subMenu"></bizsrt-sub-menu>
+    </template>
+</dom-module>
+
+<dom-module id="bizsrt-menu-item">
+    <template>
+        <style>
+            * {
+                font: inherit;
+            }             
+
+            .item-content {
+                display: block;
+                padding: 10px 15px;
+                cursor: pointer;
+            }
+
+            .item-content:hover {
+                color: #262626;
+                text-decoration: none;
+                background-color: #f5f5f5;
+            }
+        </style>
+        <span class="item-content" on-tap="_notifySelected">
+            <span>[[item.text]]</span>
+            <template is="dom-if" if="[[item.isSet]]">
+                <iron-icon icon="bizsrt:check"></iron-icon>
+            </template>
+        </span>
+    </template>
+</dom-module>
+
+<dom-module id="bizsrt-sub-menu">
+    <template>
+        <style include="bizsrt-style">
+            bizsrt-menu-item {
+                display: inline-block;
+            }
+
+            iron-dropdown {
+                z-index: 99999 !important;
+            }
+        </style>
+        <iron-dropdown id="dropdown" position-target="[[positionTarget]]" horizontal-align="auto" vertical-align="auto" no-animations="true" allow-outside-scroll="true">
+            <div class="dropdown-menu" slot="dropdown-content">
+                <template is="dom-repeat" items="[[items]]">
+                    <bizsrt-menu-item item="[[item]]" name="[[item.name]]"></bizsrt-menu-item>
+                </template>
+            </div>
+        </iron-dropdown>
+    </template>
+</dom-module>
+
+<script>
+    (function () {
+        'use strict';
+        class BizsrtSelectorMenu extends Polymer.Element {
+            static get is() { return 'bizsrt-selector-menu'; }
+
+            static get properties() {
+                return {
+                    items: {
+                        type: Array,
+                        value: [{
+                            text: "item 0"
+                        }, {
+                            text: "item 1",
+                            items: [{
+                                text: "sub item 0"
+                            }, {
+                                text: "sub item 1",
+                            }]
+                        }, {
+                            text: "item 2"
+                        }]
+                    },
+
+                    activeItem: {
+                        type: Object,
+                        observer: '_activeItemChanged'
+                    }
+                }
+            }
+
+            constructor() {
+                super();
+
+                //http://stackoverflow.com/questions/31537463/polymer-element-in-chrome-extension-content-script
+                //http://stackoverflow.com/questions/30022350/registering-a-custom-element-from-a-chrome-extension
+                /*window.addEventListener("message", (event) => {
+                    // We only accept messages from ourselves
+                    if (event.source != window)
+                        return;
+
+                    if (event.data.type && (event.data.type == "bizsrt-selector-show")) {
+                        console.log("contentSelector.html: windowMessage(bizsrt-selector-show)");
+                        this._show(event.data.anchor);
+                    }
+                }, false);*/ //Doesn't work
+                document.addEventListener('bizsrt-selector-menu-show', (e) => this._show(e, e.detail));
+                this.addEventListener('bizsrt-selector-menu-populate', (e) => this._populate(e, e.detail));
+                this.addEventListener('bizsrt-selector-menu-set', (e) => this._isSet(e, e.detail));
+                this.addEventListener('bizsrt-menu-item-activate', (e) => this._activateItem(e, e.detail));
+                this.addEventListener('bizsrt-menu-item-deactivate', (e) => this._deactivateItem(e));
+                this.addEventListener('bizsrt-menu-item-selected', (e) => this._selectItem(e, e.detail));
+                /*this.addEventListener('iron-overlay-opened', (e) => {
+                    if (this.$.dropdown == e.composedPath()[0])
+                        this._ensureFit();
+                });*/
+                this.addEventListener('iron-overlay-closed', (e) => this._onClosed(e));
+            }
+
+            _show(event, position) {
+                this.selectedItem = null; //Ensure bizsrt-menu-item-selected > bizsrt-menu-closed event sequence
+                this.activeItem = null;
+
+                if (position && position.left && position.top) {
+                    this.style.left = `${position.left}px`;
+                    this.style.top = `${position.top}px`;
+
+                    if (!this.$.dropdown.opened)
+                        this.$.dropdown.open();
+                    else
+                        this.$.dropdown.refit(); //this._ensureFit();
+                }
+            }
+
+            //Not tested - horizontal-align="auto" vertical-align="auto" seem to work with absolutely positioned host
+            /*_ensureFit() {
+                var left = this.style.left;
+                var width = this.$.dropdown.$.contentWrapper.scrollWidth;
+                var docWidth = document.body.scrollLeft + document.body.clientWidth;
+                if (width && left + width > docWidth) {
+                    this.$.dropdown.horizontalOffset = docWidth - left - width;
+                    refit = true;
+                }
+                else if (this.$.dropdown.horizontalOffset != 0) {
+                    this.$.dropdown.horizontalOffset = 0;
+                    refit = true;
+                }
+
+                var top = this.style.top;
+                var height = this.$.dropdown.$.contentWrapper.scrollHeight;
+                var docHeight = document.body.scrollTop + document.body.clientHeight;
+                if (height && top + height > docHeight) {
+                    this.$.dropdown.verticalOffset = docHeight - top - height;
+                    refit = true;
+                }
+                else if (this.$.dropdown.verticalOffset != 0) {
+                    this.$.dropdown.verticalOffset = 0;
+                    refit = true;
+                }
+
+                if (refit)
+                    this.$.dropdown.refit();
+            }*/
+
+            _populate (event, items) {
+                this.$.dropdown.close();
+                this.items = items;
+            }
+
+            _isSet (event, item) {
+                if (item && item.name && typeof item.isSet != 'undefined') {
+                    for (var i = 0, l = this.items.length; i < l; i++) {
+                        if (this.items[i].name == item.name) {
+                            this.set('items.' + i + '.isSet', item.isSet);
+                        }
+                    }
+                }
+            }
+
+            _activateItem(event, item) {
+                let menuItem = event.composedPath()[0];
+                if (item && this.activeItem != item && menuItem && menuItem.item == item)
+                    this.activeItem = menuItem;
+            }
+
+            _deactivateItem (event) {
+                this.activeItem = null;
+            }
+
+            _activeItemChanged(menuItem) {
+                if (menuItem && menuItem.item && menuItem.item.items && menuItem.item.items.length) {
+                    this.$.subMenu.positionTarget = menuItem;
+                    this.$.subMenu.items = menuItem.item.items;
+                    this._showSubMenu();
+                }
+                else
+                    this._hideSubMenu(null, true);
+            }
+
+            _showSubMenu () {
+                this.$.subMenu.show();
+            }
+
+            _hideSubMenu (event, immediate) {
+                console.log('_hideSubMenu ' + immediate);
+                this.$.subMenu.hide(immediate);
+            }
+
+            _selectItem (event, item) {
+                this.selectedItem = item; //Ensure bizsrt-menu-item-selected > bizsrt-menu-closed event sequence
+                this.activeItem = null;
+                this.$.subMenu.hide(true);
+                if (!item.name || item.items)
+                    event.stopPropagation();
+                Polymer.Async.microTask.run(() => {
+                    this.$.dropdown.close();
+                });
+            }
+
+            _onClosed (event) {
+                if (this.activeItem)
+                    this.activeItem = null;
+                if(!this.selectedItem) //Ensure bizsrt-menu-item-selected > bizsrt-menu-closed event sequence
+                    this.dispatchEvent(new CustomEvent('bizsrt-menu-closed', { composed: true }));
+            }
+        }
+        customElements.define(BizsrtSelectorMenu.is, BizsrtSelectorMenu);
+
+        class BizsrtMenuItem extends Polymer.Element {
+            static get is() { return 'bizsrt-menu-item'; }
+
+            static get properties() {
+                return {
+                    item: Object,
+                    name: {
+                        type: String,
+                        reflectToAttribute: true
+                    },
+                    notifyActive: {
+                        type: Boolean,
+                        value: false,
+                        reflectToAttribute: true
+                    }
+                }
+            }
+
+            constructor() {
+                super();
+                this.addEventListener('mouseenter', (e) => this._notifyActive());
+            }
+
+            _notifyActive () {
+                if (this.notifyActive)
+                    this.dispatchEvent(new CustomEvent('bizsrt-menu-item-activate', {
+                        composed: true,
+                        detail: this.item
+                    }));
+            }
+
+            _notifySelected () {
+                if (this.item.name && !this.item.items)
+                    this.dispatchEvent(new CustomEvent('bizsrt-menu-item-selected', {
+                        composed: true,
+                        bubbles: true,
+                        detail: this.item
+                    }));
+            }
+        }
+        customElements.define(BizsrtMenuItem.is, BizsrtMenuItem);
+
+        class BizsrtSubMenu extends Polymer.Element {
+            static get is() { return 'bizsrt-sub-menu'; }
+
+            static get properties() {
+                return {
+                    items: Array,
+                    _showing: {
+                        type: Boolean,
+                        value: false
+                    }
+                }
+            }
+
+            constructor() {
+                super();
+                //this.addEventListener('bizsrt-menu-item-selected', (e) => this._selectItem());
+                this.addEventListener('iron-overlay-closed', (e) => this._onClosed(e));
+            }
+
+            //handled by _selectItem in bizsrt-selector-menu
+            /*_selectItem (event, item) {
+                this.hide(true);
+            },*/
+
+            show () {
+                this._showing = true;
+                if (!this.$.dropdown.opened)
+                    this.$.dropdown.open();
+            }
+
+            hide (immediate) {
+                this._showing = false;
+                if (immediate)
+                    this.$.dropdown.close();
+                else
+                    Polymer.Async.timeOut.run(this._hide.bind(this), 100);
+            }
+
+            _onClosed (event) {
+                this.dispatchEvent(new CustomEvent('bizsrt-menu-item-deactivate', { composed: true }));
+                event.stopPropagation();
+            }
+        }
+        customElements.define(BizsrtSubMenu.is, BizsrtSubMenu);
+    })();
+</script>

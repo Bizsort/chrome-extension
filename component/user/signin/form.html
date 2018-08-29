@@ -1,0 +1,146 @@
+﻿<link rel="import" href="../../../import/iron-icon/iron-icon.html" />
+<link rel="import" href="../../../import/iron-pages/iron-pages.html" />
+<link rel="import" href="../../../import/paper-input/paper-input.html" />
+<link rel="import" href="../../../import/paper-button/paper-button.html" />
+<link rel="import" href="../../popup/dialog.html" />
+<link rel="import" href="../password/reset.html" />
+<link rel="import" href="../account/create.html" />
+
+<dom-module id="signin-form">
+    <template>
+        <style include="popup-dialog-content-styles">
+            paper-dialog,
+            popup-dialog {
+                width: var(--dialog-width, 350px);
+            }
+
+            iron-pages {
+                width: 100%;
+                min-width: 300px;
+            }
+
+            iron-pages > *:first-child {
+                @apply --layout-vertical;
+            }
+
+            .create {
+                position: absolute;
+                top: calc(20% - 28px);
+                right: -28px;
+                background-color: var(--accent-color);
+            }
+
+            paper-input + paper-input {
+                margin-top: 0 !important;
+            }
+
+            iron-icon {
+                color: var(--paper-light-blue-900);
+            }
+
+            .reset-prompt {
+                @apply --layout-self-start;
+                color: var(--paper-indigo-500);
+                cursor: pointer;
+            }
+        </style>
+        <!--paper-dialog id="popup" modal-->
+        <popup-dialog id="popup" modal>
+            <iron-pages id="pages" selected="0">
+                <div>
+                    <h2 class="content-item">Sign In</h2>
+                    <paper-input id="email" autofocus class="content-item" label="[[resource.Dictionary.Email]]" value="{{model.Email}}">
+                        <iron-icon icon="bizsrt:perm-identity" slot="prefix"></iron-icon>
+                    </paper-input>
+                    <paper-input type="password" class="content-item" id="password" label="[[resource.Dictionary.Password]]" value="{{model.Password}}">
+                        <iron-icon icon="bizsrt:lock-outline" slot="prefix"></iron-icon>
+                    </paper-input>
+                    <paper-button class="content-item submit" raised on-tap="_signIn">[[resource.Action.Sign_in]]</paper-button>
+                    <a class="reset-prompt content-item footer" on-tap="_reset">Forgot Password?</a>
+                    <paper-fab class="create" icon="bizsrt:add" on-tap="_create"></paper-fab>
+                </div>
+                <password-reset name="reset"></password-reset>
+                <account-create came="create"></account-create>
+            </iron-pages>
+        </popup-dialog>
+    </template>
+    <script>
+        import { Form as SigninForm$ } from './form';
+        /** @polymerElement */
+        class SigninForm extends Polymer.Element {
+            static get is() { return 'signin-form'; }
+
+            static get properties() {
+                return {
+                    resource: {
+                        type: Object,
+                        value: Resource
+                    }
+                }
+            }
+
+            constructor() {
+                super();
+                this.addEventListener('switch-page', (e) => this._switchPage(e));
+                this.addEventListener('iron-overlay-closed', (e) => {
+                    this.$.pages.selected = 0;
+                    this.model.Email = '';
+                    this.model.Password = '';
+                });
+            }
+
+            ready() {
+                this.model = new SigninForm$(new View.DomModule(this));
+                this.model.SignInAction.AddHandler((sender, action) => {
+                    if (action.open) {
+                        this.$.pages.selected = 0;
+                        this.$.popup.open();
+
+                        Polymer.Async.microTask.run(() => {
+                            this.$.popup.refit();
+                        });
+                    }
+                    else if (action.success)
+                        this.$.popup.close();
+                });
+                super.ready();
+                this.model.Initialize();
+            }
+
+            _switchPage(event) {
+                var page = event.detail && event.detail.page;
+                switch (page) {
+                    case "Reset":
+                        this.$.pages.selected = 1;
+                        break;
+                    case "Create":
+                        this.$.pages.selected = 2;
+                        break;
+                    case "Refit":
+                        break;
+                    default:
+                        this.$.pages.selected = 0;
+                        break;
+                }
+                this.$.popup.refit();
+            }
+
+            _signIn () {
+                this.model.SignIn();
+            }
+
+            _create () {
+                this._switchPage({
+                    detail: { page: 'Create' }
+                });
+            }
+
+            _reset() {
+                this._switchPage({
+                    detail: { page: 'Reset' }
+                });
+            }
+        }
+        customElements.define(SigninForm.is, SigninForm);
+    </script>
+</dom-module>

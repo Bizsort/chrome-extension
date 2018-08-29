@@ -1,0 +1,69 @@
+<link rel="import" href="../../import/paper-button/paper-button.html" />
+<link rel="import" href="../../import/paper-dialog/paper-dialog.html" />
+
+<dom-module id="confirm-form">
+    <template>
+        <style>
+            paper-dialog {
+                min-width: 350px;
+            }
+
+            paper-button.confirm {
+                background: var(--dialog-button-color);
+                color: var(--dialog-button-text-color, var(--header-text-color));
+            }
+        </style>
+        <paper-dialog id="popup" modal>
+            <h2>[[model.MessageText]]</h2>
+            <br />
+            <slot></slot>
+            <div class="buttons">
+                <paper-button dialog-dismiss>[[resource.Action.Cancel]]</paper-button>
+                <paper-button class="confirm" autofocus on-tap="_confirm">[[resource.Action.Ok]]</paper-button>
+            </div>
+        </paper-dialog>
+    </template>
+    <script>
+        import { Form as ConfirmForm$ } from './form';
+        /** @polymerElement */
+        class ConfirmForm extends Polymer.Element {
+            static get is() { return 'confirm-form'; }
+
+            static get properties() {
+                return {
+                    model: {
+                        type: Object,
+                        notify: true
+                    },
+                    optionChecked: {
+                        type: Boolean,
+                        notify: true //important
+                    },
+                    resource: Object
+                }
+            }
+
+            constructor() {
+                super();
+                this.addEventListener('iron-overlay-closed', e => {
+                    this.model.View.Closed.Invoke();
+                    if (this.optionChecked)
+                        this.optionChecked = false;
+                });
+            }
+
+            ready() {
+                this.model = new ConfirmForm$(new View.DialogDomModule(this));
+                super.ready();
+                this.model.Initialize({
+                    overlay: this.$.popup
+                });
+            }
+
+            _confirm() {
+                this.model.Confirm(this.model.Args);
+            }
+        }
+        customElements.define(ConfirmForm.is, ConfirmForm);
+    </script>
+</dom-module>

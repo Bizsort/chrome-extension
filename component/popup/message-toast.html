@@ -1,0 +1,71 @@
+﻿<link rel="import" href="../../import/paper-toast/paper-toast.html" />
+
+<dom-module id="message-toast">
+    <template>
+        <style>
+            paper-toast {
+                --paper-toast-background-color: var(--paper-blue-a700);
+                --paper-toast-color: #fff;
+            }
+
+            :host([error]) paper-toast {
+                --paper-toast-background-color: var(--paper-red-700);
+            }
+        </style>
+        <paper-toast id="toast" class="fit-bottom" text="[[text]]" duration="0"></paper-toast>
+    </template>
+    <script>
+        (function () {
+            'use strict';
+            /** @polymerElement */
+            class MessageToast extends Polymer.Element {
+                static get is() { return 'message-toast'; }
+
+                static get properties() {
+                    return {
+                        error: {
+                            type: Boolean,
+                            reflectToAttribute: true,
+                            value: false
+                        },
+                        text: {
+                            type: String,
+                            observer: '_textChanged',
+                            notify: true //important: see _onIronOverlayClosed
+                        }
+                    }
+                }
+
+                constructor() {
+                    super();
+
+                    this.addEventListener('iron-overlay-closed', (e) => {
+                        if (this.error && this.text)
+                            this.text = ''; //Update ViewModel.Error with text="{{model.Error}}" and notify: true. ViewModel.ClearError() in ErrorInfo.Clear() is fail-safe
+                        e.stopPropagation();
+                    });
+                }
+
+                ready () {
+                    super.ready();
+                    this.$.toast.noCancelOnOutsideClick = false;
+                }
+
+                show () {
+                    if (this.text)
+                        this.$.toast.open();
+                }
+
+                _textChanged (text) {
+                    if (text) {
+                        if (this.error)
+                            this.$.toast.open();
+                    }
+                    else if (this.$.toast.opened)
+                        this.$.toast.close();
+                }
+            }
+            customElements.define(MessageToast.is, MessageToast);
+        })();
+    </script>
+</dom-module>

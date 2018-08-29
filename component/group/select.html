@@ -1,0 +1,179 @@
+﻿<link rel="import" href="../../import/paper-button/paper-button.html" />
+<link rel="import" href="../../import/paper-dialog/paper-dialog.html" />
+<link rel="import" href="../../import/paper-dialog-scrollable/paper-dialog-scrollable.html" />
+<link rel="import" href="../../import/paper-input/paper-input.html">
+<link rel="import" href="select-behavior.html" />
+<link rel="import" href="autocomplete.html" />
+<link rel="import" href="autocomplete-master-behavior.html" />
+
+<dom-module id="group-select">
+    <template>
+        <style include="group-select-style"></style>
+        <paper-dialog id="popup" opened="{{opened}}" modal>
+            <div class="header">
+                <div class="parents">
+                    <dom-repeat items="[[model.ParentItems]]">
+                        <template>
+                            <!--<dom-if if="[[index]]">-->
+                            <iron-icon class="separator" icon="bizsrt:chevron-right"></iron-icon>
+                            <!--</dom-if>-->
+                            <li class="parent group" disabled$="[[!_canSelectParent(item)]]"><a on-tap="_onParent">[[item.Name]]</a></li>
+                        </template>
+                    </dom-repeat>
+                    <iron-icon class="lock" icon="bizsrt:lock-outline" hidden$="[[!model.ParentLock]]"></iron-icon>
+                </div>
+                <div>
+                    <group-autocomplete id="autocomplete" horizontal-align="right">
+                        <paper-input id="category" class="autocomplete-input" value="{{model.Text}}" no-label-float>
+                            <iron-icon icon="bizsrt:search" slot="suffix"></iron-icon>
+                        </paper-input>
+                    </group-autocomplete>
+                </div>
+            </div>
+            <paper-dialog-scrollable class="flex">
+                <div id="groups">
+                    <dom-repeat items="[[model.Items]]">
+                        <template>
+                            <li class="group first" disabled$="[[!_canSelectParent(item)]]">
+                                <a on-tap="_onGroup" href="[[_href(item.NavToken)]]">[[item.Name]]</a>
+                                <dom-if if="[[item.Locked]]">
+                                    <template>
+                                        <iron-icon class="lock" icon="bizsrt:lock-outline" hidden$="[[item.HasChildren]]"></iron-icon>
+                                    </template>
+                                </dom-if>
+                                <dom-if if="[[item.HasChildren]]">
+                                    <template>
+                                        <iron-icon class="drill-down" icon="bizsrt:chevron-right"></iron-icon>
+                                    </template>
+                                </dom-if>
+                                <dom-if if="[[_showChildren(item)]]">
+                                    <template>
+                                        <div>
+                                            <dom-repeat items="[[item.Children]]" as="subItem">
+                                                <template>
+                                                    <li class="group second" disabled$="[[!_canSelectParent(subItem)]]">
+                                                        <a on-tap="_onGroup" href="[[_href(subItem.NavToken)]]">[[subItem.Name]]</a>
+                                                        <template is="dom-if" if="[[subItem.Locked]]">
+                                                            <iron-icon class="lock" icon="bizsrt:lock-outline" hidden$="[[subItem.HasChildren]]"></iron-icon>
+                                                        </template>
+                                                        <template is="dom-if" if="[[subItem.HasChildren]]">
+                                                            <iron-icon class="drill-down" icon="bizsrt:chevron-right"></iron-icon>
+                                                        </template>
+                                                    </li>
+                                                </template>
+                                            </dom-repeat>
+                                        </div>
+                                    </template>
+                                </dom-if>
+                            </li>
+                        </template>
+                    </dom-repeat>
+                </div>
+            </paper-dialog-scrollable>
+            <div class="buttons">
+                <paper-button on-tap="close" hidden$="[[!cancelVisible]]">[[resource.Action.Cancel]]</paper-button>
+                <paper-button on-tap="_selectParent" disabled$="[[_selectParentDisabled(model.ParentGroup)]]" hidden$="[[_selectParentHidden(model.ParentGroup)]]">[[model.ParentGroup.Name]]</paper-button>
+            </div>
+        </paper-dialog>
+    </template>
+    <script>
+        import { Select as GroupSelect$ } from './select';
+        /** @polymerElement */
+        class GroupSelect extends Mixin(Polymer.Element).with(Mixins.GroupSelect, Mixins.AutocompleteMaster) {
+            static get is() { return 'group-select'; }
+
+            static get properties() {
+                return {
+                    model: {
+                        type: Object,
+                        notify: true
+                    },
+                    config: {
+                        type: Object,
+                        observer: '_configChanged'
+                    },
+                    value: {
+                        type: Number,
+                        notify: true,
+                        observer: '_valueChanged'
+                    },
+                    opened: {
+                        type: Boolean,
+                        value: false,
+                        notify: true
+                    },
+                    cancelVisible: {
+                        type: Boolean,
+                        value: true
+                    },
+                    resource: Object
+                }
+            }
+
+            constructor() {
+                super();
+                this.addEventListener('iron-overlay-closed', e => {
+                    //iron-overlay-closed can also be raised from Autocomplete
+                    if (e.target == this.$.popup)
+                        this.model.Text = '';
+                });
+            }
+
+            ready() {
+                this.model = new GroupSelect$(new View.DialogDomModule(this));
+                this.model.PropertyChange.AddHandler((sender, e) => {
+                    if (e.name == "Selected" && !e.init) {
+                        this.value = e.value.Id;
+                        this.dispatchEvent(new CustomEvent('selected', {
+                            composed: true,
+                            detail: e.value
+                        }));
+                    }
+                });
+                super.ready();
+                //https://github.com/PolymerElements/paper-dialog/issues/21
+                //https://github.com/PolymerElements/paper-dialog/issues/68 //Not enough
+                this.$.groups.addEventListener("dom-change", (e) => this._debounceResize());
+                this.model.Initialize({
+                    overlay: this.$.popup
+                });
+                this._configChanged(this.config);
+            }
+
+            _configChanged(config) {
+                if (this.model && config) {
+                    this.model.Config = config;
+                    this._valueChanged(this.value);
+                }
+            }
+
+            _valueChanged(value) {
+                if (this.model && typeof value !== 'undefined' && this.config)
+                    this.model.Populate(value);
+            }
+
+            _debounceResize() {
+                if (this.$.popup && this.opened) {
+                    this._resizeDebouncer = Polymer.Debouncer.debounce(this._resizeDebouncer,
+                        Polymer.Async.microTask, () => {
+                            this.$.popup.refit();
+                        });
+                }
+            }
+
+            //Mixins.AutocompleteMaster
+            get inputElement() {
+                return this.$.category;
+            }
+
+            open() {
+                this.$.popup.open();
+            }
+
+            close() {
+                this.$.popup.close();
+            }
+        }
+        customElements.define(GroupSelect.is, GroupSelect);
+    </script>
+</dom-module>

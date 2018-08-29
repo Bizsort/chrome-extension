@@ -1,0 +1,48 @@
+﻿<custom-style>
+    <style>
+        body {
+            @apply --paper-font-common-base;
+            font-size: 100%;
+        }
+
+        html {
+            --header-background-color: var(--google-blue-500); /*#4285f4;*/
+            --header-text-color: #fff;
+            --dialog-button-color: var(--paper-light-blue-500);
+            --header-text-color: #fff;
+            --accent-color: var(--paper-purple-a200);
+            --action-accent-color: var(--paper-red-a700);
+            --page-text-color: var(--paper-input-container-color, var(--secondary-text-color));
+            /*to be used with max-width*/
+            --center-auto-h: {
+                margin-left: auto;
+                margin-right: auto;
+            };
+            --seo-hyperlink: {
+                 text-decoration: none;
+                 color: inherit;
+                 outline: none;
+            };
+        }
+    </style>
+</custom-style>
+
+<dom-module id="paper-input-border">
+    <template>
+        <style>
+            .paper-input-border {
+                --paper-input-container-input: {
+                    box-sizing: border-box;
+                    border: 1px solid var(--paper-input-container-color, var(--secondary-text-color));
+                    margin-bottom: -2px;
+                };
+                --paper-input-container-input-focus: {
+                    border-color: var(--paper-input-container-focus-color, var(--primary-color));
+                };
+                --paper-input-container-input-invalid: {
+                    border-color: var(--paper-input-container-invalid-color, var(--error-color));
+                };
+            }
+        </style>
+    </template>
+</dom-module>

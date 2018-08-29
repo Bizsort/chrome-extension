@@ -1,0 +1,77 @@
+﻿<link rel="import" href="../../../import/paper-datatable-api/paper-datatable-api-column.html">
+<link rel="import" href="../../../import/paper-datatable-api/paper-datatable-api.html">
+<link rel="import" href="../../../import/paper-input/paper-input.html" />
+
+<dom-module id="business-office-listview">
+    <template>
+        <style>
+            paper-input {
+                width: 100%;
+            }
+        </style>
+        <paper-datatable-api data="[[model.Items]]" selected-rows="{{selectedItems}}" selectable>
+            <paper-datatable-api-column header="Name" property="Name">
+                <template>
+                    <paper-input value="{{value}}" no-label-float></paper-input>
+                </template>
+            </paper-datatable-api-column>
+            <paper-datatable-api-column header="Address" property="Location.Address">
+                <template>
+                    [[_stringifyAddress(value)]]
+                </template>
+            </paper-datatable-api-column>
+            <paper-datatable-api-column header="Postal code" property="Address.PostalCode">
+                <template>
+                    <paper-input value="{{value}}" no-label-float></paper-input>
+                </template>
+            </paper-datatable-api-column>
+            <paper-datatable-api-column header="Unit/Suite" property="Address.Address1">
+                <template>
+                    <paper-input value="{{value}}" no-label-float></paper-input>
+                </template>
+            </paper-datatable-api-column>
+            <paper-datatable-api-column header="Phone" property="Phone">
+                <template>
+                    <paper-input value="{{value}}" no-label-float></paper-input>
+                </template>
+            </paper-datatable-api-column>
+            <paper-datatable-api-column header="Fax" property="Fax">
+                <template>
+                    <paper-input value="{{value}}" no-label-float></paper-input>
+                </template>
+            </paper-datatable-api-column>
+        </paper-datatable-api>
+    </template>
+    <script>
+        import { View as ListView } from '../../list/view';
+        import { Stringify } from '../../../src/service/geocoder'
+        /** @polymerElement */
+        class BusinessOfficeListView extends Polymer.Element {
+            static get is() { return 'business-office-listview'; }
+
+            static get properties() {
+                return {
+                    selectedItems: {
+                        type: Array,
+                        notify: true,
+                        readOnly: true,
+                        value: function () {
+                            return [];
+                        }
+                    }
+                }
+            }
+
+            ready() {
+                this.model = new ListView(new View.DomModule(this));
+                super.ready();
+                this.model.Initialize();
+            }
+
+            _stringifyAddress(address) {
+                return Stringify(address, { PostalCode: false, Address1: false });
+            }
+        }
+        customElements.define(BusinessOfficeListView.is, BusinessOfficeListView);
+    </script>
+</dom-module>

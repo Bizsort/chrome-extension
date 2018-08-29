@@ -1,0 +1,178 @@
+<link rel="import" href="import/polymer/polymer-element.html" />
+
+<link rel="import" href="import/iron-form/iron-form.html" />
+<link rel="import" href="import/paper-button/paper-button.html" />
+<link rel="import" href="import/paper-checkbox/paper-checkbox.html" />
+<link rel="import" href="import/paper-input/paper-input.html" />
+<link rel="import" href="import/paper-styles/paper-styles.html">
+<link rel="import" href="component/paper/paper-input-button.html" />
+<link rel="import" href="images/icons.html" />
+
+<dom-module id="options-main">
+    <template>
+        <style>
+            :host {
+                @apply --layout-vertical;
+                @apply --layout-center;
+            }
+
+            :host > div {
+                @apply --layout-horizontal;
+            }
+
+            .header {
+                @apply --layout-center;
+                margin-bottom: 20px;
+            }
+
+            .title {
+                @apply --paper-font-title;
+                min-height: 28px;
+                margin-left: 20px;
+            }
+
+            form {
+                @apply --layout-vertical;
+                @apply --layout-start;
+            }
+
+            paper-button.solid {
+                background-color: #4584ef;
+                color: white;
+            }
+
+            label {
+                color: var(--paper-input-container-color, var(--secondary-text-color));
+                @apply --paper-font-subhead;
+                @apply --paper-input-container-label;
+            }
+
+            /*paper-checkbox.same-service-origin {
+                margin-left: 15px;
+                margin-top: 34px;
+            }*/
+
+            paper-input-button {
+                --paper-button: {
+                    margin-top: 10px;
+                    margin-left: -6px;
+                };
+            }
+        </style>
+        <div class="header">
+            <img src="images/bizsort-48.png" alt="Bizsort Logo">
+            <div class="title">Directory Admin - Options</div>
+        </div>
+        <iron-form id="form">
+            <form action="">
+                <div><label>[[_userPrompt(userName)]]</label>&nbsp;is signed in&nbsp;<paper-button class="solid" on-tap="signOut" hidden$="[[!_hasValue(userName)]]">Sign out</paper-button></div>
+                <!-- error-message="Please enter Website" required-->
+                <paper-input label="Website" value="{{webSiteOrigin}}"></paper-input>
+                <paper-input-button label="Service Url" value="{{serviceOrigin}}" no-value="{{sameServiceOrigin}}"></paper-input-button>
+                <paper-input-button label="Google Api" value="{{googleApiKey}}" no-value="{{defaultGoogleApi}}"></paper-input-button>
+                <br />
+                <paper-checkbox checked="{{enableCleansing}}">Auto check text</paper-checkbox>
+                <br />
+            </form>
+        </iron-form>
+        <div>
+            <!--<paper-button on-tap="_test">Test</paper-button>-->
+            <paper-button class="solid" on-tap="save">Save</paper-button>
+        </div>
+        <!--<paper-toast id="error" role="alert" text="Information (changes) could not be saved! Please review and correct the errors highlighted below."></paper-toast>-->
+    </template>
+    <script>
+        (function () {
+            'use strict';
+            class OptionsMain extends Polymer.Element {
+                static get is() { return 'options-main'; }
+
+                static get properties() {
+                    return {
+                        userName: String,
+                        webSiteOrigin: String,
+                        serviceOrigin: String,
+                        sameServiceOrigin: Boolean,
+                        googleApiKey: String,
+                        defaultGoogleApi: Boolean,
+                        enableCleansing: Boolean
+                    }
+                }
+
+                _hasValue(value) {
+                    return value ? true : false;
+                }
+
+                _userPrompt (userName) {
+                    return userName ? userName : "No user";
+                }
+
+                ready () {
+                    super.ready();
+                    chrome.storage.sync.get(['userLogin', 'webSiteOrigin', 'serviceOrigin', 'googleApiKey', 'disableCleansing'], (storeItems) => {
+                        this.userName = storeItems.userLogin && storeItems.userLogin.Name ? storeItems.userLogin.Name : "";
+                        this.webSiteOrigin = storeItems.webSiteOrigin || Settings.WebSite.Origin.Host;
+                        this.serviceOrigin = storeItems.serviceOrigin || Settings.Service.Origin;
+                        if (this.webSiteOrigin && this.webSiteOrigin == this.serviceOrigin)
+                            this.sameServiceOrigin = true;
+                        else
+                            this.sameServiceOrigin = false;
+                        if (storeItems.googleApiKey) {
+                            this.googleApiKey = storeItems.googleApiKey;
+                            this.defaultGoogleApi = false;
+                        }
+                        else {
+                            this.googleApiKey = '';
+                            this.defaultGoogleApi = true;
+                        }
+                        this.enableCleansing = storeItems.disableCleansing ? false : true;
+                    });
+                }
+
+                enterServiceOrigin () {
+                    this.sameServiceOrigin = false;
+                }
+
+                signOut () {
+                    chrome.storage.sync.remove('userLogin');
+                    this.userName = '';
+                }
+
+                save () {
+                    if (this.$.form.validate()) {
+                        //TODO: Notify business.js of the change
+                        var remove = [];
+                        var settings = {
+                            disableCleansing: !this.enableCleansing
+                        };
+
+                        if (this.webSiteOrigin && this.webSiteOrigin != Settings.WebSite.Origin.Host) {
+                            settings.webSiteOrigin = this.webSiteOrigin;
+                        }
+                        else
+                            remove.push('webSiteOrigin');
+
+                        var serviceOrigin = !this.sameServiceOrigin ? this.serviceOrigin : this.webSiteOrigin;
+                        if (serviceOrigin && serviceOrigin != Settings.Service.Origin) {
+                            settings.serviceOrigin = serviceOrigin;
+                        }
+                        else
+                            remove.push('serviceOrigin');
+
+                        if (this.googleApiKey && !this.defaultGoogleApi) {
+                            settings.googleApiKey = this.googleApiKey;
+                        }
+                        else
+                            remove.push('googleApiKey');
+
+                        chrome.storage.sync.set(settings);
+                        if (remove.length)
+                            chrome.storage.sync.remove(remove);
+                    }
+                }
+            }
+            customElements.define(OptionsMain.is, OptionsMain);
+        })();
+    </script>
+</dom-module>
+

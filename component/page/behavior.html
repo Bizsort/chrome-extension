@@ -1,0 +1,74 @@
+﻿<script>
+    import { Page } from '../../src/page';
+    import { DomModule } from '../../src/view/polymer'
+    import * as Resource from '../../src/resource';
+
+    /**
+    * @polymerMixin
+    * @mixes Mixins.ResponsiveLayout */
+    Mixins.Page = (superclass) => class extends superclass {
+        static get properties() {
+            return {
+                model: {
+                    type: Object,
+                    value: function () {
+                        return Page.Current.ViewModel;
+                    }
+                },
+                resource: {
+                    type: Object,
+                    value: function () { return Resource; }
+                }
+            }
+        }
+
+        constructor(viewModel) {
+            super();
+
+            this.addEventListener('view-model-error', e => {
+                let target = e.composedPath()[0];
+                if (target !== this && typeof e.detail == 'string')
+                    Page.Current.ViewModel.Error = e.detail;
+            });
+
+            if (typeof viewModel == 'function')
+                Page.Current.ViewModel = new viewModel(new DomModule(this));
+        }
+
+        ready() {
+            if (!this.model || this.model != Page.Current.ViewModel)
+                this.model = Page.Current.ViewModel;
+
+            if (this.model) {
+                if (this.model.PropertyChange)
+                    this.model.PropertyChange.AddHandler(function (sender, e) {
+                        if (e.name == 'Error' && e.value) {
+                            if (this.$.error)
+                                this.$.error.show();
+                        }
+                    }.bind(this));
+            }
+
+            super.ready();
+
+            Page.Current.Initialize(); //will call this.model.Initialize
+        }
+
+        connectedCallback() {
+            super.connectedCallback();
+            this.dispatchEvent(new CustomEvent('page-ready', { composed: true, bubbles: true/*important*/ }));
+        }
+
+        _handleAction(event) {
+            var action = event.target.dataset['action'];
+            try {
+                if (action && Page.Current.HandleAction(action, event.target.actionParam)) {
+                    event.preventDefault(); //suppress href navigation
+                }
+            }
+            catch (ex) {
+                Page.Current.HandleError(ex);
+            }
+        }
+    }
+</script>

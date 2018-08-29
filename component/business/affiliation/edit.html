@@ -1,0 +1,169 @@
+﻿<link rel="import" href="../../../import/iron-selector/iron-selector.html">
+<link rel="import" href="../../../import/iron-image/iron-image.html" />
+
+<dom-module id="business-affiliation-edit">
+    <template>
+        <style>
+            :host {
+                display: block;
+                box-sizing: border-box;
+            }
+
+            label {
+                display: inline-block;
+                color: var(--paper-input-container-color, var(--secondary-text-color));
+                @apply --paper-font-subhead;
+            }
+
+            #content {
+                @apply --layout-horizontal;
+                @apply --layout-wrap;
+            }
+
+            .image-container {
+                display: inline-block;
+                /*background: white;*/
+                box-sizing: border-box;
+                margin: 6px;
+                padding: 4px;
+                border-radius: 2px;
+                position: relative;
+                @apply --shadow-elevation-2dp;
+            }
+
+            .image-container:hover {
+                @apply --shadow-elevation-2dp;
+            }
+
+            .image-container.iron-selected {
+                @apply --shadow-elevation-4dp;
+            }
+
+            .image-container iron-image,
+            .image-container img {
+                display: block;
+            }
+
+            iron-image::shadow img {
+                fill: white;
+            }
+
+            .action-menu {
+                position: absolute;
+                bottom: 0;
+                left: 2px;
+                right: 2px;
+                padding: 6px 10px;
+                background: rgba(255,255,255,0.95);
+
+                @apply --layout;
+                @apply --layout-center;
+                @apply --layout-center-justified;
+            }
+
+            .action-menu {
+                transform: translate(0, 10px);
+                transition: var(--material-curve-320);
+                visibility: hidden;
+                opacity: 0;
+            }
+
+            .image-container:hover .action-menu,
+            .image-container.iron-selected .action-menu {
+                transform: translate(0, 0);
+                visibility: visible;
+                opacity: 1;
+            }
+
+            .action-menu > a {
+                margin: 0 5px;
+                cursor: pointer;
+                text-decoration: none;
+            }
+
+            .action-menu iron-icon {
+                margin-right: 5px;
+                opacity: 0.8;
+            }
+
+            iron-icon.remove {
+                color: var(--paper-red-a700);
+            }
+
+            #nameBar {
+                padding: 10px;
+                text-align: center;
+            }
+
+            #nameBar > span {
+                font-size: 16px;
+                font-weight: 500;
+                color: var(--paper-input-container-color, var(--secondary-text-color));
+            }
+
+            [hidden] {
+                display: none !important;
+            }
+        </style>
+        <label hidden$="[[!label]]">[[label]]</label>
+        <iron-selector id="content" selectable="business-card" class="horizontal layout wrap">
+            <template is="dom-repeat" items="[[model.Affiliations.Refs]]">
+                <div class="image-container" elevation="0">
+                    <iron-image id="image" src="[[item.Business.Image.ImageRef]]"></iron-image>
+                    <div id="nameBar">
+                        <span>[[item.Business.Name]]</span>
+                    </div>
+                    <div class="action-menu">
+                        <a on-tap="_removeAffiliation"><iron-icon class="remove" icon="bizsrt:delete"></iron-icon></a>
+                    </div>
+                </div>
+            </template>
+        </iron-selector>
+    </template>
+    <script>
+        import { Edit as BusinessAffiliationEdit$ } from './edit'
+        /** @polymerElement */
+        class BusinessAffiliationEdit extends Polymer.Element {
+            static get is() { return 'business-affiliation-edit'; }
+
+            static get properties() {
+                return {
+                    model: Object,
+                    entity: {
+                        type: Object,
+                        observer: '_entityChanged'
+                    },
+                    label: {
+                        type: String
+                    }
+                }
+            }
+
+            ready() {
+                this.model = new BusinessAffiliationEdit$(new View.DomModule(this));
+                if (this.entity) {
+                    this.model.Business = this.entity;
+                    this.model.Affiliations = this.entity.Affiliations;
+                }
+                this.model.Enabled = this.entity && this.entity.Id > 0 ? true : false;
+                super.ready();
+                this.model.Initialize();
+            }
+
+            _entityChanged(entity) {
+                if (this.model) {
+                    this.model.Business = entity;
+                    this.model.Affiliations = entity.Affiliations;
+                    this.model.Enabled = this.entity && this.entity.Id > 0 ? true : false;
+                }
+            }
+
+            _removeAffiliation(event) {
+                var affiliation = event.model.item;
+                var index = event.model.index;
+                this.model.RemoveAffiliation(affiliation, index);
+            }
+        }
+        customElements.define(BusinessAffiliationEdit.is, BusinessAffiliationEdit);
+    </script>
+</dom-module>

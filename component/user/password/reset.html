@@ -1,0 +1,92 @@
+﻿<link rel="import" href="../../../import/iron-pages/iron-pages.html" />
+<link rel="import" href="../../../import/paper-button/paper-button.html" />
+<link rel="import" href="../../../import/paper-icon-button/paper-icon-button.html" />
+<link rel="import" href="../../../import/paper-input/paper-input.html" />
+<link rel="import" href="../../popup/dialog-content-styles.html" />
+
+<dom-module id="password-reset">
+    <template>
+        <style include="popup-dialog-content-styles">
+            iron-pages {
+                width: 100%;
+            }
+
+            .content {
+                @apply --layout-vertical;
+            }
+
+            .content:last-child {
+                @apply --layout-center;
+            }
+
+            iron-icon {
+                color: var(--paper-light-blue-900);
+            }
+
+            paper-button {
+                background: var(--dialog-button-color);
+                color: var(--dialog-button-text-color, var(--header-text-color));
+            }
+
+            .reset-success {
+                color: var(--paper-indigo-500);
+            }
+        </style>
+        <iron-pages id="pages" selected="0">
+            <div class="content">
+                <h2 class="content-item">Reset your Password</h2>
+                <paper-input id="email" class="content-item" label="[[resource.Dictionary.Email]]" value="{{model.Email}}">
+                    <iron-icon icon="bizsrt:perm-identity" slot="prefix"></iron-icon>
+                </paper-input>
+                <paper-button class="content-item footer" raised on-tap="_reset">Reset password</paper-button>
+                <paper-icon-button class="close" icon="bizsrt:arrow-back" on-tap="_close"></paper-icon-button>
+            </div>
+            <div class="content">
+                <h2 class="content-item">Email Confirmation</h2>
+                <span class="reset-success content-item">Your request is being processed. You should receive a link to reset your password to the email you provided, please check your Junk folder if necessary.</span>
+                <paper-button class="content-item footer" raised on-tap="_close">Ok</paper-button>
+            </div>
+        </iron-pages>
+    </template>
+    <script>
+        import { Reset as PasswordReset$ } from './reset';
+        /** @polymerElement */
+        class PasswordReset extends Polymer.Element {
+            static get is() { return 'password-reset'; }
+
+            static get properties() {
+                return {
+                    resource: Object
+                }
+            }
+
+            ready () {
+                this.model = new PasswordReset$(new View.DomModule(this));
+                super.ready();
+                this.model.Initialize();
+            }
+
+            _reset () {
+                this.model.ResetPassword(function (success) {
+                    if (success) {
+                        this.$.pages.selected = 1;
+                        this.dispatchEvent(new CustomEvent('switch-page', {
+                            composed: true,
+                            bubbles: true,
+                            detail: {
+                                page: 'Refit',
+                                width: 500
+                            }
+                        }));
+                    }
+                }.bind(this));
+            }
+
+            _close () {
+                this.$.pages.selected = 0;
+                this.dispatchEvent(new CustomEvent('switch-page', { composed: true, bubbles: true }));
+            }
+        }
+        customElements.define(PasswordReset.is, PasswordReset);
+    </script>
+</dom-module>

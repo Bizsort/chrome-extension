@@ -1,0 +1,143 @@
+﻿<dom-module id="group-select-style">
+    <template>
+        <style>
+            .header {
+                @apply --layout-horizontal;
+                padding: 0px 24px;
+            }
+
+            .parents,
+            .flex {
+                @apply --layout-flex;
+            }
+
+            #groups {
+                @apply --layout-horizontal;
+                @apply --layout-wrap;
+                padding: 16px 16px 0px;
+            }
+
+            .parents > *,
+            .group.second > * {
+                vertical-align: middle;
+            }
+
+            .parents .separator:first-of-type {
+                display: none !important;
+            }
+
+            .lock,
+            .separator,
+            .drill-down {
+                width: 16px;
+                height: 16px;
+            }
+
+            .group a {
+                text-decoration: none;
+            }
+
+            .group[disabled] a {
+                color: inherit;
+                cursor: default;
+            }
+
+            .group[disabled] a:hover {
+                text-decoration: none !important;
+            }
+
+            .group:not(disabled) a {
+                color: blue;
+            }
+
+            .group:not(disabled) a:hover {
+                text-decoration: underline;
+                cursor: pointer;
+            }
+
+            .group.parent {
+                display: inline-block;
+                @apply --paper-font-subhead;
+            }
+
+            .group.first {
+                display: inline-block;
+                margin: 10px;
+                @apply --paper-font-body2;
+            }
+
+            .group.second {
+                list-style-type: disc;
+            }
+
+            .autocomplete-input {
+                margin-left: 10px;
+                --paper-input-container: {
+                    padding: 0;
+                }
+            }
+
+            [hidden] {
+                display: none !important;
+            }
+        </style>
+    </template>
+</dom-module>
+
+<script>
+    (function () {
+        'use strict';
+        /** @polymerMixin */
+        Mixins.GroupSelect = (superclass) => class extends superclass {
+            static get properties() {
+                return {
+                    model: Object,
+                }
+            }
+
+            _href (token) {
+                return Navigation.Shell.Href(token);
+            }
+
+            _showChildren (group) {
+                return group && group.HasChildren && this.model && this.model.ShowNested ? true : false;
+            }
+
+            _canSelectParent (parentGroup) {
+                return this.model.CanSelectParent(parentGroup);
+            }
+
+            //https://www.polymer-project.org/1.0/docs/devguide/templates.html#handling-events
+            _onParent (event) {
+                if (event.model.item && this._canSelectParent(event.model.item))
+                    this.model.SelectParent(event.model.item);
+                event.preventDefault(); //suppress href navigation
+                return false;
+            }
+
+            _hasGroupAction (group) {
+                return this.model.GetGroupAction(group) ? true : false;
+            }
+
+            _onGroup (event) {
+                var group = event.model.item || event.model.subItem;
+                if (group && this._hasGroupAction(group))
+                    this.model.SelectGroup(group)
+                event.preventDefault(); //suppress href navigation
+                return false;
+            }
+
+            _selectParentDisabled (parentGroup) {
+                return !this.model.CanSelectParent(parentGroup);
+            }
+
+            _selectParentHidden (parentGroup) {
+                return parentGroup && parentGroup.Name ? false : true;
+            }
+
+            _selectParent () {
+                this.model.SelectParent(this.model.ParentGroup);
+            }
+        }
+    })();
+</script>

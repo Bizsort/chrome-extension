@@ -1,0 +1,80 @@
+﻿<!--paper-dialog-shared-styles.html-->
+<dom-module id="popup-dialog-content-styles">
+    <template>
+        <style>
+            popup-dialog,
+            :host[popup-dialog] {
+                margin-top: var(--dialog-margin-y, 24px);
+                margin-bottom: var(--dialog-margin-y, 24px);
+                margin-left: var(--dialog-margin-x, 40px);
+                margin-right: var(--dialog-margin-x, 40px);
+                max-width: calc(100% - (var(--dialog-margin-x, 40px) * 2));
+                overflow: var(--popup-dialog-overflow, initial);
+                line-height: 16px;
+            }
+
+            .close {
+                position: absolute;
+                top: 0;
+                right: 0;
+                margin-top: 0;
+                padding: 10px;
+            }
+
+            h2 {
+                @apply --paper-font-title;
+                @apply --paper-dialog-title;
+            }
+
+            /*paper-item-shared-styles*/
+            div.header {
+                @apply --paper-font-subhead;
+            }
+
+            .content-item {
+                margin: 16px 16px 0px;
+            }
+
+            h2.content-item,
+            .content-item.header {
+                margin-top: 16px;
+            }
+
+            .collapse-margin-top
+            {
+                margin-top: 0 !important;
+            }
+
+            .content-item.footer {
+                margin-bottom: 16px;
+            }
+
+            .buttons {
+                padding: 16px;
+                @apply --layout-horizontal;
+                @apply --layout-end-justified;
+            }
+
+            .buttons.center {
+                @apply --layout-center-justified;
+            }
+
+            .buttons.right {
+                @apply --layout-end-justified;
+            }
+
+                .buttons paper-button:not(.submit) {
+                    color: var(--page-text-color);
+                }
+
+            paper-button.submit {
+                background-color: var(--header-background-color);
+                color: var(--header-text-color);
+            }
+
+            [hidden] {
+                display: none !important;
+            }
+        </style>
+    </template>
+</dom-module>

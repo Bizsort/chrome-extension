@@ -1,0 +1,118 @@
+﻿<link rel="import" href="../../import/paper-button/paper-button.html" />
+<link rel="import" href="../../import/paper-icon-button/paper-icon-button.html" />
+
+<dom-module id="list-pager">
+    <template>
+        <style>
+            :host {
+                white-space: nowrap;
+                @apply --layout-self-center;
+            }
+
+            paper-button {
+                min-width: 0;
+                margin: 0;
+            }
+
+            paper-button {
+                padding: 0.3em 0.57em;
+            }
+
+            paper-button,
+            paper-icon-button {
+                color: var(--list-pager-text-color, var(--header-background-color));
+            }
+
+            paper-button:hover,
+            paper-button[active] {
+                background: var(--header-background-color);
+                color: var(--header-text-color);
+            }
+
+            .seo-hyperlink {
+                @apply --seo-hyperlink;
+            }
+
+            :host([hidden]) {
+                display: none !important;
+            }
+        </style>
+        <paper-icon-button icon="bizsrt:chevron-left" on-tap="_handleAction" data-action="Prev" disabled$="[[!model.PreviousPage.CanMove]]"></paper-icon-button>
+        <dom-repeat id="pageTemplate" items="[[model.PageButtons]]">
+            <template>
+                <a tabindex="-1" class="seo-hyperlink" href$="[[item.href]]">
+                    <!--https://github.com/PolymerElements/paper-button/issues/166-->
+                    <paper-button active="[[item.Selected]]" on-tap="_handleAction" data-action="Page">[[item.PageNumber]]</paper-button>
+                </a>
+            </template>
+        </dom-repeat>
+        <paper-icon-button icon="bizsrt:chevron-right" on-tap="_handleAction" data-action="Next" disabled$="[[!model.NextPage.CanMove]]"></paper-icon-button>
+    </template>
+    <script>
+        import { Pager as ListPager$ } from './pager'
+        /** @polymerElement */
+        class ListPager extends Polymer.Element {
+            static get is() { return 'list-pager'; }
+
+            static get properties() {
+                return {
+                    master: Object
+                }
+            }
+
+            static get observers() {
+                return [
+                    '_masterChanged(master)'
+                ]
+            }
+
+            ready () {
+                this._ensureAttribute('hidden', true);
+                this.model = new ListPager$(new View.DomModule(this), this.master);
+                this.model.PropertyChange.AddHandler(function (sender, e) {
+                    if (e.name == 'PageCount') {
+                        if (e.value && e.value > 1)
+                            this.removeAttribute('hidden');
+                        else
+                            this.setAttribute('hidden', true);
+                    }
+                }.bind(this));
+                super.ready();
+                this.model.Initialize();
+            }
+
+            _masterChanged (master) {
+                if (this.model)
+                    this.model.Master = master;
+            }
+
+            _handleAction(event) {
+                event.stopPropagation();
+                var pager = this.model.Master;
+                switch (event.target.dataset['action']) {
+                    case "Prev":
+                        if (this.model.PreviousPage.CanMove && pager.PageIndex > 0)
+                            pager.MoveToPreviousPage();
+                        break;
+                    case "Next":
+                        if (this.model.NextPage.CanMove)
+                            pager.MoveToNextPage();
+                        break;
+                    case "Page":
+                        //http://stackoverflow.com/questions/30763774/polymer-1-0-access-parent-e-model-in-nested-repeats
+                        //var page = this.$.pageTemplate.modelForElement(event.target);
+                        var page = event.model && event.model.item;
+                        if (page && page.PageNumber) {
+                            var pageIndex = page.PageNumber - 1;
+                            if (pager.PageIndex != pageIndex)
+                                pager.MoveToPage(pageIndex);
+                        }
+                        //https://github.com/PolymerElements/paper-button/issues/150
+                        event.preventDefault(); //suppress href navigation
+                        return false;
+                }
+            }
+        }
+        customElements.define(ListPager.is, ListPager);
+    </script>
+</dom-module>

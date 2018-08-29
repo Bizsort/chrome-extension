@@ -1,0 +1,265 @@
+﻿<link rel="import" href="../../../import/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../../import/paper-fab/paper-fab.html" />
+<link rel="import" href="../../../import/paper-input/paper-input.html" />
+<link rel="import" href="../../../import/paper-item/paper-item.html" />
+<link rel="import" href="../../../import/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../../import/gold-phone-input/gold-phone-input.html" />
+<link rel="import" href="../../location/edit.html" />
+<link rel="import" href="../../validation/context.html" />
+
+<dom-module id="business-office-edit">
+    <template>
+        <style>
+            :host {
+                display: block;
+                box-sizing: border-box;
+            }
+
+            .toolbar {
+                @apply --layout-horizontal;
+                @apply --layout-center;
+            }
+
+            .toolbar > div {
+                @apply --layout-flex;
+            } 
+            
+            label {
+                color: var(--paper-input-container-color, var(--secondary-text-color));
+                @apply --paper-font-subhead;
+            }
+
+            iron-icon.is-head-office {
+                width: 40px;
+                height: 40px;
+            }
+
+            iron-icon.is-head-office,
+            iron-icon.make-head-office {
+                color: var(--accent-color);
+            }
+
+            paper-fab + paper-fab {
+                margin-left: 10px;
+            }
+
+            paper-fab.make-head-office {
+                background-color: #fff;
+                color: var(--accent-color);
+            }
+
+            paper-fab.remove {
+                background-color: #fff;
+                color: var(--action-accent-color);
+            }
+
+            paper-fab.add,
+            paper-fab.save {
+                background-color: var(--header-background-color);
+                color: var(--header-text-color);
+            }
+
+            [hidden] {
+                display: none !important;
+            }
+        </style>
+        <div class="toolbar">
+            <dom-if if="[[_officeNotSaved(model.Office.Draft)]]">
+                <template>
+                    <label>New Office</label>
+                </template>
+            </dom-if>
+            <dom-if if="[[!_officeNotSaved(model.Office.Draft)]]">
+                <template>
+                    <paper-dropdown-menu label="Office" style="min-width:300px;">
+                        <paper-listbox slot="dropdown-content" selected="{{model.Office}}" attr-for-selected="value" attr-for-item-title="label">
+                            <dom-repeat items="[[model.Offices.Refs]]">
+                                <template>
+                                    <!--workaround for HeadOffice _officeName not updating (item.HeadOffice parameter)-->
+                                    <paper-item value="[[item]]">[[_officeName(item, index, item.HeadOffice)]]</paper-item>
+                                </template>
+                            </dom-repeat>
+                        </paper-listbox>
+                    </paper-dropdown-menu>
+                    <dom-if if="[[model.Office.HeadOffice]]">
+                        <template>
+                            <iron-icon class="is-head-office" icon="bizsrt:bookmark"></iron-icon>
+                        </template>
+                    </dom-if>
+                    <!--a on-tap="_makeHeadOffice" hidden$="[[!_canMakeHeadOffice(model.Office)]]">
+                        <iron-icon class="make-head-office" icon="bizsrt:bookmark-border"></iron-icon>
+                    </a-->
+                    <paper-fab class="make-head-office" mini icon="bizsrt:bookmark-border" on-tap="_makeHeadOffice" hidden$="[[!_canMakeHeadOffice(model.Office)]]"></paper-fab>
+                </template>
+            </dom-if>
+            <div></div>
+            <paper-fab class="remove" mini icon="bizsrt:delete" on-tap="_removeOfficeTap" hidden$="[[!_canRemove(model.Offices.Refs, model.Office)]]"></paper-fab>
+            <paper-fab class="add" mini icon="bizsrt:add" on-tap="_addOffice" hidden$="[[!_canAdd(model.Offices.Refs, model.Office)]]"></paper-fab>
+            <paper-fab class="save" mini icon="bizsrt:check" on-tap="_saveOffice" hidden$="[[!model.Office]]"></paper-fab>
+        </div>
+        <div hidden$="[[!model.Office]]">
+            <paper-input label="Office name" value="{{model.Office.Name}}" style="width:400px;" hidden$="[[!_shouldShow(model.Office.Name)]]"></paper-input>
+            <gold-phone-input id="phone" label="Phone (local)" value="{{model.Office.Phone}}" style="width:250px;"></gold-phone-input>
+            <gold-phone-input id="phone1" label="Phone (toll-free)" value="{{model.Office.Phone1}}" style="width:250px;" hidden$="[[!_shouldShow(model.Office.Phone1)]]"></gold-phone-input>
+            <gold-phone-input id="fax" label="Fax" value="{{model.Office.Fax}}" style="width:250px;" hidden$="[[!_shouldShow(model.Office.Fax)]]"></gold-phone-input>
+            <location-edit id="location" address="[[model.Office.Address]]" style="min-width:400px;"></location-edit>
+        </div>
+    </template>
+    <script>
+        import { Edit as BusinessOfficeEdit$ } from './edit'
+        import { StringFormatter } from '../../../src/system'
+        /** @polymerElement */
+        class BusinessOfficeEdit extends Mixins.ValidationContext(Polymer.Element) {
+            static get is() { return 'business-office-edit'; }
+
+            static get properties() {
+                return {
+                    model: Object,
+                    entity: {
+                        type: Object,
+                        observer: '_entityChanged'
+                    },
+                    confirmDelete: {
+                        type: Object,
+                        observer: '_confirmDelete'
+                    },
+                    showFields: {
+                        type: Boolean,
+                        value: false,
+                        reflectToAttribute: true
+                    }
+                }
+            }
+
+            constructor() {
+                super();
+                this.draftFlag = -1;
+                this.draftId = 1;
+            }
+
+            ready() {
+                this.model = new BusinessOfficeEdit$(new View.DomModule(this));
+                super.ready();
+                if (this.entity)
+                    this.setBusiness(this.entity);
+                this.model.Initialize();
+            }
+
+            _entityChanged(entity) {
+                if (this.model && entity)
+                    this.setBusiness(entity);
+            }
+
+            setBusiness(business) {
+                this.model.Business = business;
+                this.model.setOffice();
+            }
+
+            _officeName(office, index) {
+                if (office) {
+                    if (office.HeadOffice)
+                        return "Head Office";
+                    else if (office.Draft)
+                        return "New Office";
+                    else
+                        return office.Name || office.Address.Text || "Office " + (index || this.model.Offices.Refs.indexOf(office));
+                }
+            }
+
+            _officeNotSaved(draft) {
+                return draft === this.draftFlag ? true : false;
+            }
+
+            _canAdd(offices, office) {
+                if (offices && offices.length && (!office || office.Draft !== this.draftFlag /*|| offices.every(o => o.Draft != office.Draft)*/))
+                    return true;
+                return false;
+            }
+
+            _addOffice() {
+                this.model.SaveOffice((valid) => {
+                    if ((valid && this.model.Office.Draft !== this.draftFlag) || !this.model.Office) {
+                        var office = {
+                            Id: 0,
+                            Address: {
+                                Location: 0
+                            },
+                            Phone: '',
+                            Draft: this.draftFlag
+                        };
+                        //this.model.AddOffice(office); //don't add just yet, do it in _saveOffice
+                        this.model.Office = office;
+                        this.addMode = true;
+                    }
+                });
+            }
+
+            _saveOffice() {
+                this.model.SaveOffice((valid) => {
+                    if (valid && this.model.Office.Draft === this.draftFlag) {
+                        this.model.Office.Draft = this.draftId++;
+                        this.model.AddOffice(this.model.Office);
+                        //Update buttons, store Business in ViewModel.Business
+                        //this.model.notifyProperty.call(this.model, "Office", this.model.Office); //Doesn't seem to work when Object ref is not changing
+                        this.model.PropertyChange.Invoke(this.model, { name: "Office", value: this.model.Office });
+                        this.model.notifyProperty.call(this.model, "Office.Draft", this.model.Office.Draft);
+                    }
+                });
+            }
+
+            _canRemove(offices, office) {
+                if (offices && office && (offices.length > 1 || office.Draft === this.draftFlag))
+                    return true;
+                return false;
+            }
+
+            _removeOfficeTap() {
+                if (this.model.Office) {
+                    if (this.model.Office.Draft !== this.draftFlag) {
+                        if (this.model.Office.Id || !this.model.Office.Draft) {
+                            if (this.confirmDelete) {
+                                this.confirmDelete.MessageArgs["Name"] = this._officeName(this.model.Office);
+                                this.confirmDelete.Args = this.model.Office;
+                                this.confirmDelete.Show();
+                            }
+                        }
+                        else
+                            this._removeOffice(this.model.Office);
+                    }
+                    else
+                        this.model.setOffice();
+                }
+            }
+
+            _removeOffice(office) {
+                this.model.RemoveOffice(office);
+                this.model.setOffice();
+            }
+
+            _canMakeHeadOffice(office) {
+                return office && !office.HeadOffice ? true : false;
+            }
+
+            _makeHeadOffice(event) {
+                this.model.MakeHeadOffice(this.model.Office);
+                this.model.setOffice();  //workaround for HeadOffice iron-icon not updating
+            }
+
+            _confirmDelete(confirmDelete) {
+                if (confirmDelete) {
+                    confirmDelete.MessageFormat = new StringFormatter(Resource.Global.Confirm_Delete_X, ["Name"]);
+                    confirmDelete.Confirm = (office) => {
+                        this._removeOffice(office);
+                        confirmDelete.Hide();
+                    };
+                }
+            }
+
+            _shouldShow(fieldValue) {
+                return this.showFields || fieldValue;
+            }
+        }
+        customElements.define(BusinessOfficeEdit.is, BusinessOfficeEdit);
+    </script>
+</dom-module >
+        

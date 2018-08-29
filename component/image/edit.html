@@ -1,0 +1,174 @@
+﻿<link rel="import" href="../../import/iron-icon/iron-icon.html" />
+<link rel="import" href="../../import/iron-selector/iron-selector.html">
+
+<dom-module id="image-edit">
+    <template>
+        <style>
+            :host {
+                display: block;
+                box-sizing: border-box;
+            }
+
+            label {
+                display: block;
+                color: var(--paper-input-container-color, var(--secondary-text-color));
+                @apply --paper-font-subhead;
+                @apply --paper-input-container-label;
+            }
+
+            #content {
+                @apply --layout-horizontal;
+                @apply --layout-wrap;
+            }
+
+            .image-container {
+                display: inline-block;
+                /*background: white;*/
+                box-sizing: border-box;
+                margin: 6px;
+                padding: 4px;
+                border-radius: 2px;
+                position: relative;
+            }
+
+            .image-container:hover {
+                @apply --shadow-elevation-2dp;
+            }
+
+            .image-container.iron-selected {
+                @apply --shadow-elevation-4dp;
+            }
+
+            .image-container iron-image,
+            .image-container img {
+                display: block;
+            }
+
+            iron-image::shadow img {
+                fill: white;
+            }
+
+            .action-menu {
+                position: absolute;
+                bottom: 0;
+                left: 2px;
+                right: 2px;
+                padding: 6px 10px;
+                background: rgba(255,255,255,0.95);
+
+                @apply --layout;
+                @apply --layout-center;
+                @apply --layout-center-justified;
+            }
+
+            .action-menu {
+                transform: translate(0, 10px);
+                transition: var(--material-curve-320);
+                visibility: hidden;
+                opacity: 0;
+            }
+
+            .image-container:hover .action-menu,
+            .image-container.iron-selected .action-menu {
+                transform: translate(0, 0);
+                visibility: visible;
+                opacity: 1;
+            }
+
+            .action-menu > a {
+                margin: 0 5px;
+                cursor: pointer;
+                text-decoration: none;
+            }
+
+            .action-menu iron-icon {
+                margin-right: 5px;
+                opacity: 0.8;
+            }
+
+            iron-icon.is-default {
+                display: block;
+                position: absolute;
+                top: -1px;
+                right: 15px;
+                width: 40px;
+                height: 40px;
+            }
+
+            iron-icon.is-default,
+            iron-icon.make-default {
+                color: var(--accent-color);
+            }
+
+            iron-icon.remove {
+                color: var(--action-accent-color);
+            }
+        </style>
+        <label hidden$="[[!label]]">[[label]]</label>
+        <iron-selector id="content" selectable=".image-container">
+            <template is="dom-repeat" items="[[model.Images.Refs]]">
+                <div class="image-container">
+                    <img style$="[[_computeImgStyle(item.Width, item.Height)]]" src="[[item.ImageRef]]" />
+                    <template is="dom-if" if="[[item.IsDefault]]">
+                        <iron-icon class="is-default" icon="bizsrt:bookmark"></iron-icon>
+                    </template>
+                    <div class="action-menu">
+                        <a on-tap="_makeDefault" hidden$="[[item.IsDefault]]"><iron-icon class="make-default" icon="bizsrt:bookmark-border"></iron-icon></a>
+                        <a on-tap="_removeImage"><iron-icon class="remove" icon="bizsrt:delete"></iron-icon></a>
+                    </div>
+                </div>
+            </template>
+        </iron-selector>
+    </template>
+    <script>
+        import { Edit as ImageEdit$ } from './edit'
+        /** @polymerElement */
+        class ImageEdit extends Polymer.Element {
+            static get is() { return 'image-edit'; }
+
+            static get properties() {
+                return {
+                    model: Object,
+                    entity: {
+                        type: Object,
+                        observer: '_entityChanged'
+                    },
+                    label: {
+                        type: String
+                    }
+                }
+            }
+
+            ready () {
+                this.model = new ImageEdit$(new View.DomModule(this));
+                if (this.entity)
+                    this.model.Images = this.entity.Images;
+                    super.ready();
+                    this.model.Initialize();
+
+            }
+
+            _entityChanged (entity) {
+                if (this.model)
+                    this.model.Images = entity.Images;
+            }
+
+            _removeImage (event) {
+                var image = event.model.item;
+                var index = event.model.index;
+                this.model.RemoveImage(image, index);
+            }
+
+            _makeDefault (event) {
+                var image = event.model.item;
+                var index = event.model.index;
+                this.model.MakeDefault(image, index);
+            }
+
+            _computeImgStyle (width, height) {
+                return width && height ? 'width:' + width + 'px; height: ' + height + 'px;' : '';
+            }
+        }
+        customElements.define(ImageEdit.is, ImageEdit);
+    </script>
+</dom-module>

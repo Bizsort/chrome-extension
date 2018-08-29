@@ -1,0 +1,24 @@
+﻿<script>
+    //http://justinfagnani.com/2015/12/21/real-mixins-with-javascript-classes/
+    (function () {
+        'use strict';
+        /** @polymerMixin */
+        Mixins.ValidationContext = (superclass) => class extends superclass {  
+            constructor() {
+                super();
+                //https://github.com/Polymer/polymer/issues/4228
+                this.addEventListener('validation-element-register', e => {
+                    let target = e.composedPath()[0];
+                    if (target !== this) {
+                        if (this.model) {
+                            target.ValidationContext = this.model.ValidationContext;
+                            e.stopPropagation();
+                        }
+                        else
+                            console.error("ValidationContext: model has been initialized");
+                    }
+                });
+            }
+        };
+    })();
+</script>

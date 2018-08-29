@@ -1,0 +1,53 @@
+﻿<link rel="import" href="../../../import/paper-checkbox/paper-checkbox.html" />
+<link rel="import" href="../../../import/paper-input/paper-input.html" />
+<link rel="import" href="../../../import/paper-input/paper-input-error.html">
+<link rel="import" href="../../category/checkedit.html" />
+
+<dom-module id="business-transaction-type-edit">
+    <template>
+        <style>
+            :host {
+                position: relative;
+            }
+
+            label {
+                color: var(--page-text-color);
+                @apply --paper-font-subhead;
+            }
+
+            paper-checkbox {
+                margin-left: 10px;
+            }
+
+            paper-input-error {
+                overflow: visible;
+            }
+        </style>
+        <div class="horizontal layout center">
+            <label>Transaction Type</label>
+            <template is="dom-repeat" items="[[model.Values]]">
+                <paper-checkbox checked="{{item.Selected}}">[[item.Text]]</paper-checkbox>
+            </template>
+        </div>
+        <dom-if if="[[errorMessage]]">
+            <template>
+                <paper-input-error invalid>[[errorMessage]]</paper-input-error>
+            </template>
+        </dom-if>
+    </template>
+    <script>
+        import { Edit as BusinessTransactionTypeEdit$ } from './edit'
+        /**
+        * @polymerElement
+        * @mixes Mixins.MultiCheckEdit */
+        class BusinessTransactionTypeEdit extends Mixins.MultiCheckEdit(Polymer.Element) {
+            static get is() { return 'business-transaction-type-edit'; }
+
+            ready() {
+                this.model = new BusinessTransactionTypeEdit$(new View.DomModule(this));
+                super.ready(); //will call model.Initialize()
+            }
+        }
+        customElements.define(BusinessTransactionTypeEdit.is, BusinessTransactionTypeEdit);
+    </script>
+</dom-module>

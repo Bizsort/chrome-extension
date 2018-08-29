@@ -1,0 +1,49 @@
+﻿<link rel="import" href="../../../import/paper-dropdown-menu/paper-dropdown-menu.html" />
+<link rel="import" href="../../../import/paper-item/paper-item.html" />
+<link rel="import" href="../../../import/paper-listbox/paper-listbox.html" />
+
+<link rel="import" href="../../dropdown/edit.html" />
+
+<dom-module id="product-type-edit">
+    <template>
+        <style>
+            paper-listbox {
+                padding: 0;
+            }
+
+            paper-dropdown-menu {
+                --paper-input-error: {
+                    overflow: visible;
+                };
+            }
+        </style>
+        <!--https://github.com/PolymerElements/paper-dropdown-menu/pull/70-->
+        <paper-dropdown-menu label="Type" invalid="[[invalid]]" error-message="[[errorMessage]]" noink no-animations>
+            <paper-listbox slot="dropdown-content" selected="{{model.SelectedValue}}" attr-for-selected="value">
+                <template is="dom-repeat" items="[[model.Values]]">
+                    <paper-item value="[[item.ItemKey]]">[[item.ItemText]]</paper-item>
+                </template>
+            </paper-listbox>
+        </paper-dropdown-menu>
+    </template>
+    <script>
+        import { Edit as ProductTypeEdit$ } from './edit'
+        /**
+        * @polymerElement
+        * @mixes Mixins.DropdownEdit */
+        class ProductTypeEdit extends Mixins.DropdownEdit(Polymer.Element) {
+            static get is() { return 'product-type-edit'; }
+
+            _valueChanged(value) {
+                if (this.model && typeof value !== 'undefined')
+                    this.model.LookupValue = value;
+            }
+
+            ready() {
+                this.model = new ProductTypeEdit$(new View.DomModule(this));
+                super.ready(); //will call model.Initialize()
+            }
+        }
+        customElements.define(ProductTypeEdit.is, ProductTypeEdit);
+    </script>
+</dom-module>

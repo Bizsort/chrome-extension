@@ -1,0 +1,28 @@
+﻿<dom-module id="error-message">
+    <template>
+        <style>
+            :host {
+                display: none;
+                max-width: 600px;
+                color: var(--paper-input-container-invalid-color, var(--google-red-500));
+            }
+
+            :host([error]) {
+                display: inline-block;
+            }
+        </style>
+        <span>[[error]]</span>
+    </template>
+    <script>
+        Polymer({
+            is: 'error-message',
+
+            properties: {
+                error: {
+                    reflectToAttribute: true,
+                    type: String
+                }
+            }
+        });
+    </script>
+</dom-module>

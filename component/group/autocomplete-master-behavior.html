@@ -1,0 +1,21 @@
+﻿<script>
+    (function () {
+        'use strict';
+        /** @polymerMixin */
+        Mixins.AutocompleteMaster = (superclass) => class extends superclass {
+            ready() {
+                super.ready();
+                var activate = function () {
+                    if (this.model && this.model.Text && !this.model.Autocomplete.Disabled)
+                        this.model.Autocomplete.Active = true;
+                }.bind(this);
+
+                //Don't show the popup when Autocomplete is pre-populated during page initialization
+                this.inputElement.addEventListener('input', activate);
+                //Re-open Autocomplete when clicking on a previously entered input
+                this.inputElement.addEventListener('click', activate/*, true*/); //or focusin?
+                this.$.autocomplete.positionTarget = this.inputElement;
+            }
+        };
+    })();
+</script>

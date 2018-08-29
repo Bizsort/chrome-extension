@@ -1,0 +1,149 @@
+﻿<link rel="import" href="../../import/paper-input/paper-input-behavior.html">
+<link rel="import" href="../../import/paper-input/paper-input-container.html">
+<link rel="import" href="../../import/paper-input/paper-input-error.html">
+
+<!--https://www.polymer-project.org/2.0/docs/devguide/style-shadow-dom#custom-style
+<custom-style>
+    <style>
+        .richtext-html p {
+            margin: 0;
+        }
+
+        .richtext-html p:empty {
+            display: none;
+        }
+
+        .richtext-html p:not(:empty) + p {
+            margin-top: 12px;
+        }
+    </style>
+</custom-style>-->
+
+<!--marked-element-->
+<dom-module id="richtext-input">
+    <template>
+        <style include="paper-input-border">
+            :host {
+                display: block;
+            }
+
+            label {
+                pointer-events: none;
+            }
+
+            .richtext-html {
+                min-width: 250px;
+                min-height: 100px;
+                max-height: 1000px;
+
+                @apply --rich-text-html;
+            }
+
+            .richtext-html,
+            paper-input-container ::slotted(.richtext-html) {
+                @apply --paper-font-body1;
+                outline: none;
+                padding: 6px;
+                overflow-y: auto;
+            }
+
+            .richtext-html p,
+            paper-input-container ::slotted(.richtext-html) p {
+                margin: 0;
+            }
+
+            .richtext-html p:empty,
+            paper-input-container ::slotted(.richtext-html) p:empty {
+                display: none;
+            }
+
+            .richtext-html p:not(:empty) + p,
+            paper-input-container ::slotted(.richtext-html) p:not(:empty) + p {
+                margin-top: 12px;
+            }
+
+            paper-input-error {
+                overflow: visible;
+            }
+
+            [hidden] {
+                display: none !important;
+            }
+        </style>
+        <paper-input-container invalid="[[invalid]]" no-label-float>
+            <label hidden$="[[!label]]" aria-hidden="true" for="input" slot="label">[[label]]</label>
+
+            <!--<slot name="richtext-html" slot="input"></slot>-->
+            <div id="content" contenteditable class="richtext-html paper-input-input paper-input-border" slot="input"></div>
+
+            <template is="dom-if" if="[[errorMessage]]">
+                <paper-input-error aria-live="assertive" slot="add-on">[[errorMessage]]</paper-input-error>
+            </template>
+        </paper-input-container>
+    </template>
+    <script>
+        (function () {
+            'use strict';
+            /** @polymerElement */
+            class RichtextInput extends Polymer.mixinBehaviors(Polymer.PaperInputBehavior, Polymer.Element) {
+                static get is() { return 'richtext-input'; }
+
+                static get properties() {
+                    return {
+                        /**
+                        * The richtext source that should be rendered by this element.
+                        */
+                        richtext: {
+                            type: String,
+                            value: null,
+                            observer: 'render'
+                        }
+                    }
+                }
+
+                ready() {
+                    this._ensureAttribute('role', 'error-container');
+                    super.ready();
+                }
+
+                connectedCallback() {
+                    super.connectedCallback();
+                    this._outputElement = this.outputElement;
+                    this.render();
+                }
+
+                get outputElement() {
+                    var child = Polymer.dom(this).queryDistributedElements('slot="input"')[0];
+
+                    if (child)
+                        return child;
+                    //polymer/lib/legacy/legacy-element-mixin.html toggleClass
+                    if (this.$.content.classList.contains('hidden'))
+                        this.$.content.classList.remove('hidden');
+                    return this.$.content;
+                }
+
+                render() {
+                    if (this._outputElement/*this.isConnected*/) {
+                        if (!this.richtext) {
+                            this._outputElement.innerHTML = '';
+                            return;
+                        }
+                        //User Polymer.dom so that p styles get applied (but they don't)
+                        Polymer.dom(this._outputElement).innerHTML = this.richtext;
+                        this.dispatchEvent(new CustomEvent('render', { composed: true }));
+                    }
+                }
+
+                get html() {
+                    return this._outputElement.innerHTML;
+                }
+
+                get text() {
+                    return this._outputElement.textContent;
+                }
+            }
+            customElements.define(RichtextInput.is, RichtextInput);
+        })();
+    </script>
+</dom-module>
